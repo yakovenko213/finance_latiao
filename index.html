@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao Finance | Custom Categories v9.6</title>
+    <title>Latiao Finance | Clean UI v9.7</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -69,7 +69,6 @@
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
     };
 
-    // Default Categories (Fallback)
     const DEFAULT_CATEGORIES = {
         income: ['Продажі', 'Кешбек', 'Повернення', 'Інше'],
         expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Інше']
@@ -82,9 +81,7 @@
         const [loading, setLoading] = useState(true);
         const [statusMsg, setStatusMsg] = useState('');
         
-        // Settings State
         const [settings, setSettings] = useState({ monoKey: '', novaKey: '', monoAccountId: '' });
-        // Category State
         const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
 
         const [email, setEmail] = useState('');
@@ -98,24 +95,20 @@
                     setView('dashboard');
                     setLoading(true);
 
-                    // Load Global Settings
                     try {
                         const sSnap = await getDoc(doc(db, "settings", "global"));
                         if (sSnap.exists()) setSettings(sSnap.data());
                     } catch(e) { console.error(e); }
 
-                    // Load Categories
                     try {
                         const cSnap = await getDoc(doc(db, "settings", "categories"));
                         if (cSnap.exists()) {
                             setCategories(cSnap.data());
                         } else {
-                            // Initial Save if empty
                             await setDoc(doc(db, "settings", "categories"), DEFAULT_CATEGORIES);
                         }
                     } catch(e) { console.error(e); }
 
-                    // Load Transactions
                     const q = query(collection(db, "transactions"));
                     const unsubDb = onSnapshot(q, (snap) => {
                         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -203,11 +196,9 @@
                     
                     let cat = 'Інше';
                     const desc = (item.description || '').toLowerCase();
-                    // Basic Auto-cat
                     if (desc.includes('nova')) cat = 'Логістика';
                     if (desc.includes('atb') || desc.includes('silpo')) cat = 'Закупівля (COGS)';
                     
-                    // Check if detected cat exists in user categories, else default
                     const catList = isIncome ? categories.income : categories.expense;
                     if(!catList.includes(cat) && !catList.includes('Логістика') && !catList.includes('Закупівля (COGS)')) {
                         cat = catList.includes('Інше') ? 'Інше' : catList[0];
@@ -279,7 +270,7 @@
                         <div className="w-8 h-8 bg-brand-500 rounded-lg text-white flex items-center justify-center shadow-md">L</div> 
                         Latiao
                     </div>
-                    {/* Navigation Top */}
+                    {/* Navigation */}
                     <nav className="flex-1 px-4 space-y-1 mt-2">
                         {['dashboard','ops','pnl','dividends'].map(item => (
                             <button key={item} onClick={()=>setView(item)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view===item ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
@@ -289,7 +280,7 @@
                         ))}
                     </nav>
                     
-                    {/* Bottom Settings & Logout */}
+                    {/* Settings & Logout */}
                     <div className="p-4 border-t space-y-1">
                         <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view==='settings' ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
                             <Icon name="settings" size={20}/> 
@@ -317,10 +308,14 @@
                             </h1>
                             <p className="text-slate-400 text-sm mt-1">{new Date().toLocaleDateString('uk-UA', { dateStyle: 'full' })}</p>
                         </div>
-                        <div className="flex gap-3">
-                             <button onClick={()=>setModalType('income')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="plus"/> Дохід</button>
-                             <button onClick={()=>setModalType('expense')} className="bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="minus"/> Витрата</button>
-                        </div>
+                        
+                        {/* BUTTONS: ONLY SHOW ON DASHBOARD AND OPERATIONS */}
+                        {(view === 'dashboard' || view === 'ops') && (
+                            <div className="flex gap-3">
+                                 <button onClick={()=>setModalType('income')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="plus"/> Дохід</button>
+                                 <button onClick={()=>setModalType('expense')} className="bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="minus"/> Витрата</button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="fade-in pb-10">
