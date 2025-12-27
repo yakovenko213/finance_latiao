@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao Finance | Enterprise System v12.9</title>
+    <title>Latiao Finance | Enterprise v12.10 Stable</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -23,8 +23,7 @@
                     },
                     boxShadow: {
                         'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03)',
-                        'glow-brand': '0 0 20px -5px rgba(255, 87, 34, 0.4)',
-                        'glow-emerald': '0 0 20px -5px rgba(16, 185, 129, 0.4)'
+                        'glow-brand': '0 0 20px -5px rgba(255, 87, 34, 0.4)'
                     }
                 }
             }
@@ -76,7 +75,6 @@
 
     const { useState, useEffect, useMemo } = React;
 
-    // --- ICONS & HELPERS ---
     const Icon = ({ name, size = 18, className }) => {
         useEffect(() => { try { if(window.lucide) window.lucide.createIcons(); } catch(e){} }, [name]);
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
@@ -98,7 +96,7 @@
     ];
 
     // =================================================================================================
-    //  VIEW COMPONENTS (FULL IMPLEMENTATION)
+    //  VIEW COMPONENTS (SAFE & STABLE)
     // =================================================================================================
 
     // 1. DASHBOARD
@@ -316,7 +314,7 @@
         const [filters, setFilters] = useState({ date: '', source: 'all', type: 'all', min: '', max: '' });
         const handleSync = async () => { setIsSyncing(true); await syncMono(); setIsSyncing(false); };
         const filtered = transactions.filter(t => {
-            if (filters.date) { const [y, m, d] = filters.date.split('-'); if (t.date !== `${d}.${m}.${y}`) return false; }
+            if (filters.date && t.date) { const [y, m, d] = filters.date.split('-'); if (t.date !== `${d}.${m}.${y}`) return false; }
             if (filters.source !== 'all') { const src = t.source || ''; if (filters.source === 'mono' && !src.includes('Monobank')) return false; if (filters.source === 'nova' && !src.includes('Nova')) return false; if (filters.source === 'cash' && !src.includes('Готівка')) return false; }
             if (filters.type !== 'all' && t.type !== filters.type) return false;
             if (filters.min && Number(t.amount) < Number(filters.min)) return false;
@@ -345,7 +343,35 @@
         );
     };
 
-    // 6. MANAGERS VIEW (SAFE & FULL)
+    // 6. SETTINGS VIEW
+    const SettingsView = ({ settings, setSettings, saveSettings, syncMono, deleteAllTransactions, categories, saveCategories }) => {
+        const [newCatIn, setNewCatIn] = useState(''); const [newCatOut, setNewCatOut] = useState('');
+        const addCat = (t, v, setter) => { if(!v) return; saveCategories({...categories, [t]: [...(categories?.[t]||[]), v]}); setter(''); };
+        const removeCat = (t, v) => { if(confirm('Видалити?')) saveCategories({...categories, [t]: (categories?.[t]||[]).filter(c=>c!==v)}); };
+
+        return (
+            <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
+                <div className="card-modern p-8">
+                    <h2 className="text-2xl font-bold mb-8 flex items-center gap-3 text-slate-800"><div className="bg-blue-100 p-2 rounded-xl text-blue-600"><Icon name="tags" size={24}/></div> Налаштування Категорій</h2>
+                    <div className="grid md:grid-cols-2 gap-10 relative"><div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-100 hidden md:block"></div>
+                        <div><h3 className="font-bold text-base text-emerald-700 uppercase mb-4 flex items-center gap-2"><Icon name="arrow-down-circle" size={18}/> Категорії Доходів</h3><div className="flex gap-2 mb-4"><input type="text" value={newCatIn} onChange={e=>setNewCatIn(e.target.value)} className="flex-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:bg-white transition font-medium" placeholder="Назва нової категорії..."/><button onClick={()=>addCat('income',newCatIn,setNewCatIn)} className="bg-emerald-500 text-white p-3 rounded-xl hover:bg-emerald-600 transition shadow-md active:scale-95"><Icon name="plus" size={20}/></button></div><div className="flex flex-wrap gap-2">{(categories?.income||[]).map(c => (<span key={c} className="group bg-emerald-50 text-emerald-700 text-sm px-3 py-1.5 rounded-lg border border-emerald-100 flex items-center gap-2 font-bold transition hover:border-emerald-300 hover:shadow-sm">{c} <button onClick={()=>removeCat('income',c)} className="text-emerald-300 hover:text-red-500 transition opacity-50 group-hover:opacity-100"><Icon name="x-circle" size={16}/></button></span>))}</div></div>
+                        <div><h3 className="font-bold text-base text-orange-700 uppercase mb-4 flex items-center gap-2"><Icon name="arrow-up-circle" size={18}/> Категорії Витрат</h3><div className="flex gap-2 mb-4"><input type="text" value={newCatOut} onChange={e=>setNewCatOut(e.target.value)} className="flex-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-500 focus:bg-white transition font-medium" placeholder="Назва нової категорії..."/><button onClick={()=>addCat('expense',newCatOut,setNewCatOut)} className="bg-brand-500 text-white p-3 rounded-xl hover:bg-brand-600 transition shadow-md active:scale-95"><Icon name="plus" size={20}/></button></div><div className="flex flex-wrap gap-2">{(categories?.expense||[]).map(c => (<span key={c} className="group bg-orange-50 text-orange-700 text-sm px-3 py-1.5 rounded-lg border border-orange-100 flex items-center gap-2 font-bold transition hover:border-orange-300 hover:shadow-sm">{c} <button onClick={()=>removeCat('expense',c)} className="text-orange-300 hover:text-red-500 transition opacity-50 group-hover:opacity-100"><Icon name="x-circle" size={16}/></button></span>))}</div></div>
+                    </div>
+                </div>
+                <div className="card-modern p-8 relative overflow-hidden">
+                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-800 to-slate-600"></div><h2 className="text-2xl font-bold mb-8 flex items-center gap-3 text-slate-800"><div className="bg-slate-100 p-2 rounded-xl text-slate-600"><Icon name="link" size={24}/></div> API Інтеграції</h2>
+                    <div className="space-y-6">
+                         <div className="bg-slate-50/80 p-6 rounded-2xl border border-slate-200 hover:border-brand-200 transition-colors group"><div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow"><div className="w-10 h-10 logo-mono"></div></div><div><h3 className="font-bold text-lg text-slate-800">Monobank</h3><p className="text-xs font-medium text-slate-500">Автоматичний імпорт виписок ФОП</p></div></div><div className="space-y-4"><div><label className="text-xs font-bold text-slate-500 uppercase block mb-1.5 ml-1">Персональний X-Token</label><input type="password" value={settings.monoKey} onChange={e=>setSettings({...settings, monoKey:e.target.value})} placeholder="Вставте ваш токен сюди..." className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm outline-none focus:border-brand-500 transition font-mono shadow-sm"/></div><div className="flex gap-4 items-end"><div className="flex-1"><label className="text-xs font-bold text-slate-500 uppercase block mb-1.5 ml-1">ID Рахунку (Account ID)</label><input value={settings.monoAccountId} onChange={e=>setSettings({...settings, monoAccountId:e.target.value})} placeholder="Оберіть після синхронізації" className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm outline-none focus:border-brand-500 transition font-mono shadow-sm" readOnly/></div><button onClick={syncMono} disabled={!settings.monoKey} className="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-700 transition shadow-md disabled:opacity-50 disabled:shadow-none h-[46px] flex items-center gap-2 whitespace-nowrap active:scale-95"><Icon name="refresh-cw" size={18}/> Отримати рахунки</button></div></div></div>
+                        <div className="bg-slate-50/80 p-6 rounded-2xl border border-slate-200 hover:border-brand-200 transition-colors opacity-60 relative"><div className="absolute top-4 right-4 bg-slate-200 text-slate-500 text-xs px-2 py-1 rounded-md font-bold uppercase">Скоро</div><div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shadow-md"><div className="w-10 h-10 logo-nova"></div></div><div><h3 className="font-bold text-lg text-slate-800">NovaPay</h3><p className="text-xs font-medium text-slate-500">Бізнес інтеграція</p></div></div><div><label className="text-xs font-bold text-slate-500 uppercase block mb-1.5 ml-1">Client Key</label><input disabled value={settings.novaKey} onChange={e=>setSettings({...settings, novaKey:e.target.value})} placeholder="В розробці..." className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm outline-none cursor-not-allowed font-mono shadow-sm"/></div></div>
+                    </div>
+                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end"><button onClick={()=>saveSettings(settings)} className="bg-brand-500 text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:bg-brand-600 hover:shadow-brand-500/30 transition flex items-center gap-2 active:scale-95"><Icon name="save" size={20}/> Зберегти всі налаштування</button></div>
+                </div>
+                <div className="card-modern p-8 border-2 border-red-100 bg-red-50/30 relative overflow-hidden group hover:border-red-200 transition-colors"><div className="absolute -right-10 -bottom-10 text-red-500 opacity-5 group-hover:opacity-10 transition-opacity group-hover:rotate-12"><Icon name="alert-triangle" size={150}/></div><h3 className="text-red-700 font-bold text-lg mb-2 flex items-center gap-2"><Icon name="alert-triangle"/> Небезпечна зона</h3><p className="text-sm text-red-600 mb-6 font-medium max-w-xl">Ця дія безповоротно видалить ВСІ транзакції з бази даних. Використовуйте тільки якщо хочете почати облік з чистого аркуша.</p><button onClick={deleteAllTransactions} className="bg-white border-2 border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 px-6 py-3 rounded-xl font-bold transition shadow-sm flex items-center gap-2 active:scale-95 relative z-10"><Icon name="trash-2" size={18}/> Видалити всю базу транзакцій</button></div>
+            </div>
+        );
+    };
+
+    // 7. MANAGERS VIEW (SAFE & FULL)
     const ManagersView = ({ db }) => {
         const [managers, setManagers] = useState([]);
         const [showModal, setShowModal] = useState(false);
@@ -394,32 +420,6 @@
         );
     };
 
-    const SettingsView = ({ settings, setSettings, saveSettings, syncMono, deleteAllTransactions, categories, saveCategories }) => {
-        const [newCatIn, setNewCatIn] = useState(''); const [newCatOut, setNewCatOut] = useState('');
-        const addCat = (t, v, setter) => { if(!v) return; saveCategories({...categories, [t]: [...categories[t], v]}); setter(''); };
-        const removeCat = (t, v) => { if(confirm('Видалити?')) saveCategories({...categories, [t]: categories[t].filter(c=>c!==v)}); };
-        return (
-            <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-                <div className="card-modern p-8">
-                    <h2 className="text-2xl font-bold mb-8 flex items-center gap-3 text-slate-800"><div className="bg-blue-100 p-2 rounded-xl text-blue-600"><Icon name="tags" size={24}/></div> Налаштування Категорій</h2>
-                    <div className="grid md:grid-cols-2 gap-10 relative"><div className="absolute left-1/2 top-0 bottom-0 w-px bg-slate-100 hidden md:block"></div>
-                        <div><h3 className="font-bold text-base text-emerald-700 uppercase mb-4 flex items-center gap-2"><Icon name="arrow-down-circle" size={18}/> Категорії Доходів</h3><div className="flex gap-2 mb-4"><input type="text" value={newCatIn} onChange={e=>setNewCatIn(e.target.value)} className="flex-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:border-emerald-500 focus:bg-white transition font-medium" placeholder="Назва нової категорії..."/><button onClick={()=>addCat('income',newCatIn,setNewCatIn)} className="bg-emerald-500 text-white p-3 rounded-xl hover:bg-emerald-600 transition shadow-md active:scale-95"><Icon name="plus" size={20}/></button></div><div className="flex flex-wrap gap-2">{categories.income.map(c => (<span key={c} className="group bg-emerald-50 text-emerald-700 text-sm px-3 py-1.5 rounded-lg border border-emerald-100 flex items-center gap-2 font-bold transition hover:border-emerald-300 hover:shadow-sm">{c} <button onClick={()=>removeCat('income',c)} className="text-emerald-300 hover:text-red-500 transition opacity-50 group-hover:opacity-100"><Icon name="x-circle" size={16}/></button></span>))}</div></div>
-                        <div><h3 className="font-bold text-base text-orange-700 uppercase mb-4 flex items-center gap-2"><Icon name="arrow-up-circle" size={18}/> Категорії Витрат</h3><div className="flex gap-2 mb-4"><input type="text" value={newCatOut} onChange={e=>setNewCatOut(e.target.value)} className="flex-1 border border-slate-200 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-500 focus:bg-white transition font-medium" placeholder="Назва нової категорії..."/><button onClick={()=>addCat('expense',newCatOut,setNewCatOut)} className="bg-brand-500 text-white p-3 rounded-xl hover:bg-brand-600 transition shadow-md active:scale-95"><Icon name="plus" size={20}/></button></div><div className="flex flex-wrap gap-2">{categories.expense.map(c => (<span key={c} className="group bg-orange-50 text-orange-700 text-sm px-3 py-1.5 rounded-lg border border-orange-100 flex items-center gap-2 font-bold transition hover:border-orange-300 hover:shadow-sm">{c} <button onClick={()=>removeCat('expense',c)} className="text-orange-300 hover:text-red-500 transition opacity-50 group-hover:opacity-100"><Icon name="x-circle" size={16}/></button></span>))}</div></div>
-                    </div>
-                </div>
-                <div className="card-modern p-8 relative overflow-hidden">
-                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-slate-800 to-slate-600"></div><h2 className="text-2xl font-bold mb-8 flex items-center gap-3 text-slate-800"><div className="bg-slate-100 p-2 rounded-xl text-slate-600"><Icon name="link" size={24}/></div> API Інтеграції</h2>
-                    <div className="space-y-6">
-                         <div className="bg-slate-50/80 p-6 rounded-2xl border border-slate-200 hover:border-brand-200 transition-colors group"><div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow"><div className="w-10 h-10 logo-mono"></div></div><div><h3 className="font-bold text-lg text-slate-800">Monobank</h3><p className="text-xs font-medium text-slate-500">Автоматичний імпорт виписок ФОП</p></div></div><div className="space-y-4"><div><label className="text-xs font-bold text-slate-500 uppercase block mb-1.5 ml-1">Персональний X-Token</label><input type="password" value={settings.monoKey} onChange={e=>setSettings({...settings, monoKey:e.target.value})} placeholder="Вставте ваш токен сюди..." className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm outline-none focus:border-brand-500 transition font-mono shadow-sm"/></div><div className="flex gap-4 items-end"><div className="flex-1"><label className="text-xs font-bold text-slate-500 uppercase block mb-1.5 ml-1">ID Рахунку (Account ID)</label><input value={settings.monoAccountId} onChange={e=>setSettings({...settings, monoAccountId:e.target.value})} placeholder="Оберіть після синхронізації" className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm outline-none focus:border-brand-500 transition font-mono shadow-sm" readOnly/></div><button onClick={syncMono} disabled={!settings.monoKey} className="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-700 transition shadow-md disabled:opacity-50 disabled:shadow-none h-[46px] flex items-center gap-2 whitespace-nowrap active:scale-95"><Icon name="refresh-cw" size={18}/> Отримати рахунки</button></div></div></div>
-                        <div className="bg-slate-50/80 p-6 rounded-2xl border border-slate-200 hover:border-brand-200 transition-colors opacity-60 relative"><div className="absolute top-4 right-4 bg-slate-200 text-slate-500 text-xs px-2 py-1 rounded-md font-bold uppercase">Скоро</div><div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center shadow-md"><div className="w-10 h-10 logo-nova"></div></div><div><h3 className="font-bold text-lg text-slate-800">NovaPay</h3><p className="text-xs font-medium text-slate-500">Бізнес інтеграція</p></div></div><div><label className="text-xs font-bold text-slate-500 uppercase block mb-1.5 ml-1">Client Key</label><input disabled value={settings.novaKey} onChange={e=>setSettings({...settings, novaKey:e.target.value})} placeholder="В розробці..." className="w-full border border-slate-200 bg-white px-4 py-3 rounded-xl text-sm outline-none cursor-not-allowed font-mono shadow-sm"/></div></div>
-                    </div>
-                    <div className="mt-8 pt-6 border-t border-slate-100 flex justify-end"><button onClick={()=>saveSettings(settings)} className="bg-brand-500 text-white px-8 py-4 rounded-xl font-bold shadow-lg hover:bg-brand-600 hover:shadow-brand-500/30 transition flex items-center gap-2 active:scale-95"><Icon name="save" size={20}/> Зберегти всі налаштування</button></div>
-                </div>
-                <div className="card-modern p-8 border-2 border-red-100 bg-red-50/30 relative overflow-hidden group hover:border-red-200 transition-colors"><div className="absolute -right-10 -bottom-10 text-red-500 opacity-5 group-hover:opacity-10 transition-opacity group-hover:rotate-12"><Icon name="alert-triangle" size={150}/></div><h3 className="text-red-700 font-bold text-lg mb-2 flex items-center gap-2"><Icon name="alert-triangle"/> Небезпечна зона</h3><p className="text-sm text-red-600 mb-6 font-medium max-w-xl">Ця дія безповоротно видалить ВСІ транзакції з бази даних. Використовуйте тільки якщо хочете почати облік з чистого аркуша.</p><button onClick={deleteAllTransactions} className="bg-white border-2 border-red-200 text-red-600 hover:bg-red-500 hover:text-white hover:border-red-500 px-6 py-3 rounded-xl font-bold transition shadow-sm flex items-center gap-2 active:scale-95 relative z-10"><Icon name="trash-2" size={18}/> Видалити всю базу транзакцій</button></div>
-            </div>
-        );
-    };
-
     const TransactionModal = ({ type, close, categories }) => {
         const [form, setForm] = useState({ amount: '', desc: '', cat: 'Інше', source: 'Monobank ФОП' });
         const submit = async () => { if(!form.amount) return; const isDiv = type === 'dividend'; let cat = form.cat; if(!isDiv && form.cat === 'Інше') { const desc = (form.desc||'').toLowerCase(); if(desc.includes('nova')) cat = 'Логістика'; if(desc.includes('meta')) cat = 'Реклама'; } else if(isDiv) cat = 'Дивіденди'; await addDoc(collection(db, "transactions"), { amount: Number(form.amount), description: form.desc || (isDiv?'Виплата дивідендів':''), cat, source: form.source, type: (type==='dividend' || type==='expense') ? 'expense' : 'income', isDividend: isDiv, date: new Date().toLocaleDateString('uk-UA'), createdAt: Date.now() }); close(); };
@@ -430,7 +430,7 @@
         );
     };
 
-    // --- MAIN APP CONTROLLER ---
+    // --- MAIN APP ---
 
     const App = () => {
         const [currentUser, setCurrentUser] = useState(null); 
@@ -694,7 +694,7 @@
                     <div className="flex justify-between items-center mb-8 fade-in sticky top-0 z-30 py-4 -mt-4 bg-transparent backdrop-blur-md">
                         <div>
                             <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight capitalize drop-shadow-sm">{ALL_VIEWS.find(v=>v.id===view)?.label}</h1>
-                            <p className="text-slate-500 font-medium mt-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> {currentUser?.email} | {currentUser?.role === 'admin' ? 'Власник' : 'Менеджер'}</p>
+                            <p className="text-slate-500 font-medium mt-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> {currentUser?.email || user?.email} | {currentUser?.role === 'admin' ? 'Адміністратор' : 'Менеджер'}</p>
                         </div>
                         {(view==='dashboard'||view==='ops') && 
                         <div className="flex gap-4 shadow-soft p-1.5 bg-white rounded-2xl border border-slate-100">
