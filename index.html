@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latiao Finance Enterprise</title>
+    
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8FAFC; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel" data-type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // --- ТВОЇ НАЛАШТУВАННЯ FIREBASE ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDIk302oYXye-r4hRE-EB16N6K3T31g1uk",
+      authDomain: "latiao-finance.firebaseapp.com",
+      projectId: "latiao-finance",
+      storageBucket: "latiao-finance.firebasestorage.app",
+      messagingSenderId: "858773999156",
+      appId: "1:858773999156:web:fe8f4907314f83c9a88461"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // --- ІКОНКИ (SVG) ---
+    const Icons = {
+        Lock: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+        Wallet: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>,
+        ArrowUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></svg>,
+        ArrowDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 7h10v10"/><path d="M17 17 7 7"/></svg>, // Using diagonal arrow for consistency
+        Trash: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
+        Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+        LogOut: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+    };
+
+    const { useState, useEffect, useMemo } = React;
+
+    // --- БІЗНЕС НАЛАШТУВАННЯ ---
+    const CATEGORIES = {
+        income: ['Продажі', 'Повернення', 'Кешбек', 'Інше'],
+        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Інше']
+    };
+    const ACCOUNTS = ['Monobank ФОП', 'NovaPay', 'Готівка'];
+
+    const App = () => {
+        // --- СТАН ---
+        const [isLoggedIn, setIsLoggedIn] = useState(false);
+        const [password, setPassword] = useState('');
+        const [error, setError] = useState('');
+        
+        const [transactions, setTransactions] = useState([]);
+        const [activeTab, setActiveTab] = useState('dashboard');
+        
+        // Модальне вікно
+        const [modalType, setModalType] = useState(null); // 'income', 'expense', 'dividend'
+        const [form, setForm] = useState({ amount: '', desc: '', cat: 'Інше', source: 'Monobank ФОП' });
+
+        // --- ЗАВАНТАЖЕННЯ ДАНИХ ---
+        useEffect(() => {
+            if (!isLoggedIn) return;
+            // Слухаємо базу
+            const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                setTransactions(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            });
+            return () => unsubscribe();
+        }, [isLoggedIn]);
+
+        // --- ЛОГІКА (P&L та інше) ---
+        const metrics = useMemo(() => {
+            // P&L не враховує дивіденди
+            const revenue = transactions.filter(t => t.type === 'income' && !t.isDividend).reduce((s,t) => s + t.amount, 0);
+            const cogs = transactions.filter(t => t.cat === 'Закупівля (COGS)').reduce((s,t) => s + t.amount, 0);
+            const opex = transactions.filter(t => t.type === 'expense' && t.cat !== 'Закупівля (COGS)' && !t.isDividend).reduce((s,t) => s + t.amount, 0);
+            const netProfit = (revenue - cogs) - opex;
+
+            // Cash Flow враховує все
+            const totalCash = transactions.reduce((s,t) => t.type === 'income' ? s + t.amount : s - t.amount, 0);
+            
+            // Дивіденди
+            const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s + t.amount, 0);
+            
+            // Runway (Запас ходу)
+            const burnRate = (opex + cogs) / 30 || 1; 
+            const runway = (totalCash / burnRate).toFixed(0);
+
+            return { revenue, cogs, opex, netProfit, totalCash, dividends, runway };
+        }, [transactions]);
+
+        // --- ДІЇ ---
+        const handleLogin = (e) => {
+            e.preventDefault();
+            if (password === 'admin' || password === 'latiao2025') {
+                setIsLoggedIn(true);
+            } else {
+                setError('Невірний код доступу');
+            }
+        };
+
+        const handleSubmit = async () => {
+            if (!form.amount) return;
+            
+            const isDiv = modalType === 'dividend';
+            let finalCat = form.cat;
+            
+            // Авто-категоризація (Smart Rules)
+            const descLower = form.desc.toLowerCase();
+            if (!isDiv) {
+                if (descLower.includes('nova')) finalCat = 'Логістика';
+                if (descLower.includes('meta') || descLower.includes('google')) finalCat = 'Реклама';
+            } else {
+                finalCat = 'Дивіденди';
+            }
+
+            await addDoc(collection(db, "transactions"), {
+                amount: Number(form.amount),
+                description: form.desc || (isDiv ? 'Виплата дивідендів' : 'Без опису'),
+                cat: finalCat,
+                source: form.source,
+                type: modalType === 'income' ? 'income' : 'expense',
+                isDividend: isDiv,
+                date: new Date().toLocaleDateString('uk-UA'),
+                createdAt: Date.now()
+            });
+
+            setModalType(null);
+            setForm({ amount: '', desc: '', cat: 'Інше', source: 'Monobank ФОП' });
+        };
+
+        const deleteItem = async (id) => {
+            if(confirm("Видалити запис?")) await deleteDoc(doc(db, "transactions", id));
+        };
+
+        // --- ЕКРАН ВХОДУ ---
+        if (!isLoggedIn) {
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-[#0F172A] p-4 text-white relative overflow-hidden">
+                    <div className="absolute top-[-20%] right-[-10%] w-96 h-96 bg-[#FF5722] rounded-full opacity-20 blur-[100px]"></div>
+                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl w-full max-w-sm shadow-2xl z-10 fade-in">
+                        <div className="flex justify-center mb-6">
+                            <div className="w-16 h-16 bg-[#FF5722] rounded-2xl flex items-center justify-center text-3xl font-bold shadow-lg shadow-orange-500/30">L</div>
+                        </div>
+                        <h1 className="text-2xl font-bold text-center mb-2">Latiao Enterprise</h1>
+                        <p className="text-center text-slate-400 text-xs uppercase mb-8 tracking-widest">Authorized Access Only</p>
+                        
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <div>
+                                <label className="text-[10px] text-slate-400 font-bold uppercase ml-1">Passcode</label>
+                                <div className="relative mt-1">
+                                    <span className="absolute left-3 top-3 text-slate-500"><Icons.Lock /></span>
+                                    <input type="password" value={password} onChange={e=>setPassword(e.target.value)} 
+                                        className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-600 focus:outline-none focus:border-[#FF5722] transition-colors" 
+                                        placeholder="••••••" autoFocus />
+                                </div>
+                            </div>
+                            {error && <div className="text-red-400 text-xs text-center">{error}</div>}
+                            <button type="submit" className="w-full bg-[#FF5722] hover:bg-[#F4511E] py-4 rounded-xl font-bold shadow-lg shadow-orange-900/40 transition-all mt-2">Login</button>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- ГОЛОВНИЙ ЕКРАН ---
+        return (
+            <div className="min-h-screen pb-24 md:pb-0 md:flex">
+                
+                {/* SIDEBAR (PC) */}
+                <div className="hidden md:flex w-64 bg-white border-r flex-col p-6 fixed h-full">
+                    <div className="font-bold text-2xl text-[#FF5722] mb-10 flex items-center gap-2">
+                        <div className="w-8 h-8 bg-[#FF5722] rounded text-white flex items-center justify-center text-sm">L</div> Finance
+                    </div>
+                    <nav className="space-y-2 flex-1">
+                        {['dashboard', 'pnl', 'dividends', 'transactions'].map(id => (
+                            <button key={id} onClick={()=>setActiveTab(id)} className={`w-full text-left p-3 rounded-xl capitalize font-medium transition-colors ${activeTab===id ? 'bg-orange-50 text-[#FF5722]' : 'text-slate-500 hover:bg-slate-50'}`}>
+                                {id}
+                            </button>
+                        ))}
+                    </nav>
+                    <button onClick={()=>setIsLoggedIn(false)} className="text-slate-400 hover:text-red-500 flex items-center gap-2 text-sm"><Icons.LogOut /> Вихід</button>
+                </div>
+
+                {/* MOBILE HEADER */}
+                <div className="md:hidden bg-white p-4 flex justify-between items-center sticky top-0 z-20 shadow-sm border-b">
+                    <span className="font-bold text-slate-800">Latiao Finance</span>
+                    <button onClick={()=>setIsLoggedIn(false)} className="text-slate-400"><Icons.LogOut/></button>
+                </div>
+
+                <main className="flex-1 md:ml-64 p-4 md:p-8 max-w-5xl mx-auto w-full fade-in">
+                    
+                    {/* DASHBOARD TAB */}
+                    {activeTab === 'dashboard' && (
+                        <div className="space-y-6">
+                            {/* KPI CARDS */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="bg-[#0F172A] text-white p-6 rounded-2xl shadow-xl relative overflow-hidden">
+                                    <div className="absolute right-[-20px] top-[-20px] opacity-10 scale-150"><Icons.Wallet/></div>
+                                    <div className="text-slate-400 text-xs uppercase font-bold mb-1">Кеш (Всі гроші)</div>
+                                    <div className="text-3xl font-bold">{metrics.totalCash.toLocaleString()} ₴</div>
+                                </div>
+                                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">Чистий прибуток</div>
+                                    <div className={`text-2xl font-bold ${metrics.netProfit>=0?'text-emerald-600':'text-red-600'}`}>{metrics.netProfit.toLocaleString()} ₴</div>
+                                    <div className="text-[10px] text-slate-400 mt-1">Net Profit (без дивідендів)</div>
+                                </div>
+                                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">Виплачено власнику</div>
+                                    <div className="text-2xl font-bold text-slate-800">{metrics.dividends.toLocaleString()} ₴</div>
+                                </div>
+                                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                                    <div className="text-slate-500 text-xs uppercase font-bold mb-1">Runway (Запас)</div>
+                                    <div className="text-2xl font-bold text-[#FF5722]">{metrics.runway} днів</div>
+                                </div>
+                            </div>
+
+                            {/* BUTTONS */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <button onClick={()=>setModalType('income')} className="bg-emerald-500 text-white p-4 rounded-xl font-bold shadow-lg shadow-emerald-100 flex items-center justify-center gap-2 active:scale-95 transition-transform"><Icons.ArrowDown/> Дохід</button>
+                                <button onClick={()=>setModalType('expense')} className="bg-[#FF5722] text-white p-4 rounded-xl font-bold shadow-lg shadow-orange-100 flex items-center justify-center gap-2 active:scale-95 transition-transform"><Icons.ArrowUp/> Витрата</button>
+                            </div>
+
+                            {/* RECENT LIST */}
+                            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                <div className="p-4 border-b font-bold text-slate-700">Останні операції</div>
+                                {transactions.slice(0, 5).map(t => (
+                                    <div key={t.id} className="p-4 border-b last:border-0 flex justify-between items-center">
+                                        <div className="flex gap-3 items-center">
+                                            <div className={`p-2 rounded-full ${t.isDividend ? 'bg-purple-100 text-purple-600' : (t.type==='income'?'bg-emerald-100 text-emerald-600':'bg-red-50 text-red-500')}`}>
+                                                {t.isDividend ? <Icons.Wallet/> : (t.type==='income'?<Icons.ArrowDown/>:<Icons.ArrowUp/>)}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-sm text-slate-800">{t.description}</div>
+                                                <div className="text-[10px] text-slate-400">{t.cat} • {t.source}</div>
+                                            </div>
+                                        </div>
+                                        <div className={`font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>
+                                            {t.type==='income'?'+':'-'}{t.amount.toLocaleString()}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* P&L TAB */}
+                    {activeTab === 'pnl' && (
+                        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm max-w-2xl mx-auto">
+                            <h2 className="text-xl font-bold mb-6 pb-2 border-b">Звіт P&L</h2>
+                            <div className="space-y-3">
+                                <div className="flex justify-between font-bold text-lg"><span>(+) Виручка</span><span className="text-emerald-600">{metrics.revenue.toLocaleString()}</span></div>
+                                <div className="flex justify-between text-sm pl-4 text-slate-500"><span>(-) Собівартість (COGS)</span><span>{metrics.cogs.toLocaleString()}</span></div>
+                                <div className="flex justify-between py-2 pl-4 font-bold bg-blue-50 text-blue-800 rounded"><span>= Валовий прибуток</span><span>{(metrics.revenue - metrics.cogs).toLocaleString()}</span></div>
+                                <div className="pt-2 font-bold text-slate-700">Операційні витрати (OpEx):</div>
+                                <div className="flex justify-between pl-4 text-sm text-red-500 font-bold"><span>(-) Всього витрат</span><span>{metrics.opex.toLocaleString()}</span></div>
+                                <div className="flex justify-between py-4 border-t-2 border-slate-900 font-bold text-xl mt-4">
+                                    <span>= Чистий прибуток</span>
+                                    <span className={metrics.netProfit>=0?'text-emerald-600':'text-red-600'}>{metrics.netProfit.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* DIVIDENDS TAB */}
+                    {activeTab === 'dividends' && (
+                        <div className="max-w-xl mx-auto">
+                            <div className="bg-slate-900 text-white p-6 rounded-2xl mb-6 shadow-xl">
+                                <h2 className="text-xl font-bold mb-2">Виплата дивідендів</h2>
+                                <p className="text-slate-400 text-xs mb-4">Доступно з чистого прибутку: <span className="text-emerald-400 font-bold">{metrics.netProfit.toLocaleString()} ₴</span></p>
+                                <button onClick={()=>setModalType('dividend')} className="w-full bg-white text-slate-900 py-3 rounded-xl font-bold hover:bg-slate-200 transition-colors">Виплатити собі</button>
+                            </div>
+                            <div className="bg-white rounded-2xl border border-slate-100">
+                                <div className="p-4 font-bold border-b">Історія виплат</div>
+                                {transactions.filter(t => t.isDividend).map(t => (
+                                    <div key={t.id} className="p-4 border-b flex justify-between">
+                                        <div><div className="font-bold">{t.description}</div><div className="text-xs text-slate-400">{t.date}</div></div>
+                                        <div className="font-bold">-{t.amount.toLocaleString()}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                     {/* TRANSACTIONS TAB */}
+                     {activeTab === 'transactions' && (
+                        <div className="space-y-4">
+                            <h2 className="font-bold text-xl">Всі транзакції</h2>
+                            <div className="bg-white rounded-2xl border border-slate-100">
+                            {transactions.map(t => (
+                                <div key={t.id} className="p-4 border-b flex justify-between items-center">
+                                    <div>
+                                        <div className="font-bold text-sm">{t.description}</div>
+                                        <div className="text-xs text-slate-400">{t.cat} | {t.date}</div>
+                                    </div>
+                                    <div className="text-right flex items-center gap-3">
+                                        <span className={`font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>{t.type==='income'?'+':'-'}{t.amount.toLocaleString()}</span>
+                                        <button onClick={()=>deleteItem(t.id)} className="text-slate-300 hover:text-red-500"><Icons.Trash/></button>
+                                    </div>
+                                </div>
+                            ))}
+                            </div>
+                        </div>
+                    )}
+                </main>
+
+                {/* MOBILE NAV */}
+                <div className="md:hidden fixed bottom-0 w-full bg-white border-t p-2 flex justify-around pb-6 z-40">
+                    {['dashboard', 'pnl', 'dividends'].map(id => (
+                        <button key={id} onClick={()=>setActiveTab(id)} className={`p-2 rounded-xl flex flex-col items-center ${activeTab===id ? 'text-[#FF5722]' : 'text-slate-400'}`}>
+                            <span className="capitalize font-bold text-[10px]">{id}</span>
+                        </button>
+                    ))}
+                </div>
+
+                {/* MODAL */}
+                {modalType && (
+                    <div className="fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center p-4 backdrop-blur-sm">
+                        <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom duration-300">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="font-bold text-lg">
+                                    {modalType==='dividend' ? '💸 Виплата дивідендів' : (modalType==='income'?'💰 Дохід':'💸 Витрата')}
+                                </h3>
+                                <button onClick={()=>setModalType(null)} className="bg-slate-100 p-1 rounded-full text-slate-500">✕</button>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-slate-400 uppercase">Сума</label>
+                                    <input type="number" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="w-full text-4xl font-bold border-b py-2 focus:outline-none focus:border-[#FF5722]" placeholder="0" autoFocus />
+                                </div>
+
+                                {modalType !== 'dividend' && (
+                                    <>
+                                        <input type="text" value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className="w-full bg-slate-50 p-3 rounded-xl outline-none" placeholder="Опис (Nova, Meta...)" />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select value={form.cat} onChange={e=>setForm({...form, cat:e.target.value})} className="bg-slate-50 p-3 rounded-xl text-sm outline-none">
+                                                {CATEGORIES[modalType].map(c=><option key={c} value={c}>{c}</option>)}
+                                            </select>
+                                            <select value={form.source} onChange={e=>setForm({...form, source:e.target.value})} className="bg-slate-50 p-3 rounded-xl text-sm outline-none">
+                                                {ACCOUNTS.map(a=><option key={a} value={a}>{a}</option>)}
+                                            </select>
+                                        </div>
+                                    </>
+                                )}
+                                
+                                <button onClick={handleSubmit} className={`w-full text-white py-4 rounded-xl font-bold shadow-lg mt-2 ${modalType==='income'?'bg-emerald-500':(modalType==='dividend'?'bg-slate-900':'bg-[#FF5722]')}`}>
+                                    Підтвердити
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+
+</body>
+</html>
