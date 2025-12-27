@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Latiao Finance | Mobile App</title>
+    <title>Latiao Finance | Mobile Optimized v13.1</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#FF5722">
-    <meta name="application-name" content="Latiao App">
+    <meta name="theme-color" content="#ffffff">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732220.png">
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
@@ -31,9 +30,7 @@
                         'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03)',
                         'glow-brand': '0 0 20px -5px rgba(255, 87, 34, 0.4)'
                     },
-                    screens: {
-                        'xs': '375px', // Support small phones
-                    }
+                    screens: { 'xs': '375px' }
                 }
             }
         }
@@ -42,33 +39,26 @@
         body { color: #1e293b; -webkit-tap-highlight-color: transparent; }
         main { background-image: radial-gradient(circle at center, #f1f5f9 1px, transparent 1px); background-size: 40px 40px; }
         
-        /* Mobile specific adjustments */
         .sidebar-link { transition: all 0.2s ease-in-out; }
         .sidebar-link.active { background: linear-gradient(135deg, #FF5722 0%, #ea580c 100%); color: white; box-shadow: 0 8px 16px -4px rgba(255, 87, 34, 0.3); border-radius: 16px; }
         .sidebar-link:hover:not(.active) { background: #fff1ec; color: #ea580c; border-radius: 16px; }
         
         .card-modern { background: white; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); transition: transform 0.2s, box-shadow 0.2s; }
-        /* Disable hover effects on mobile to prevent sticky states */
-        @media (hover: hover) {
-            .card-modern:hover { box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.08); border-color: #cbd5e1; }
-            .table-row-modern:hover { background-color: #f8fafc; transform: scale-[1.005]; }
-        }
-
+        
         .table-row-modern { transition: all 0.15s; border-radius: 12px; }
         .table-row-modern td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
         .table-row-modern td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); scale: 0.98; } to { opacity: 1; transform: translateY(0); scale: 1; } }
+        
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); scale: 0.99; } to { opacity: 1; transform: translateY(0); scale: 1; } }
         
         .logo-mono { background-image: url('https://multicast.com.ua/wp-content/uploads/2024/04/monobank-logo.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
         .logo-nova { background-image: url('https://novapay.ua/wp-content/themes/novapay/assets/img/logo.svg'); background-size: contain; background-repeat: no-repeat; background-position: center; }
         
-        /* Hide scrollbar for clean UI but allow scrolling */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Safe Area for iPhones with notch */
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .pt-safe { padding-top: env(safe-area-inset-top); }
     </style>
 </head>
 <body>
@@ -96,6 +86,7 @@
 
     const { useState, useEffect, useMemo } = React;
 
+    // --- ICONS & HELPERS ---
     const Icon = ({ name, size = 18, className }) => {
         useEffect(() => { try { if(window.lucide) window.lucide.createIcons(); } catch(e){} }, [name]);
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
@@ -110,13 +101,13 @@
         {id:'dashboard', label:'Огляд', icon:'layout-grid', mobile: true},
         {id:'ops', label:'Операції', icon:'list-checks', mobile: true},
         {id:'pnl', label:'P&L', icon:'pie-chart', mobile: true},
-        {id:'cashflow', label:'CashFlow', icon:'banknote', mobile: false}, // Desktop/More menu
+        {id:'cashflow', label:'CashFlow', icon:'banknote', mobile: false},
         {id:'dividends', label:'Дивіденди', icon:'gem', mobile: false},
         {id:'managers', label:'Команда', icon:'users-round', mobile: false},
         {id:'settings', label:'Налаштування', icon:'sliders-horizontal', mobile: true}
     ];
 
-    // --- VIEW COMPONENTS ---
+    // --- COMPONENTS ---
 
     const DashboardView = ({ metrics, transactions, setView }) => {
         const isHealthy = metrics.margin > 20;
@@ -193,6 +184,7 @@
 
     const PnLView = ({ metrics, transactions }) => {
         const getPct = (val) => metrics.revenue ? ((val / metrics.revenue) * 100).toFixed(1) : 0;
+        const getExpPct = (val) => metrics.totalExpense ? ((val / metrics.totalExpense) * 100).toFixed(1) : 0;
         const allExpenses = transactions.filter(t => t.type === 'expense' && !t.isDividend).reduce((acc, t) => { const existing = acc.find(i => i.cat === t.cat); if (existing) existing.val += Number(t.amount); else acc.push({ cat: t.cat, val: Number(t.amount) }); return acc; }, []).sort((a, b) => b.val - a.val);
 
         return (
@@ -277,16 +269,27 @@
         </div>
     );
 
+    // --- OPS VIEW WITH PAGINATION (FIXED) ---
     const OpsView = ({ transactions, deleteTx, syncMono, canDelete, categories }) => {
         const [isSyncing, setIsSyncing] = useState(false);
         const [filters, setFilters] = useState({ date: '', source: 'all', type: 'all' });
+        const [page, setPage] = useState(1);
+        const ITEMS_PER_PAGE = 20;
+
         const handleSync = async () => { setIsSyncing(true); await syncMono(); setIsSyncing(false); };
+        
         const filtered = transactions.filter(t => {
-            if (filters.date) { const [y, m, d] = filters.date.split('-'); if (t.date !== `${d}.${m}.${y}`) return false; }
+            if (filters.date && t.date) { const [y, m, d] = filters.date.split('-'); if (t.date !== `${d}.${m}.${y}`) return false; }
             if (filters.source !== 'all') { const src = t.source || ''; if (filters.source === 'mono' && !src.includes('Monobank')) return false; if (filters.source === 'nova' && !src.includes('Nova')) return false; if (filters.source === 'cash' && !src.includes('Готівка')) return false; }
             if (filters.type !== 'all' && t.type !== filters.type) return false;
             return true;
         });
+
+        // Pagination Logic
+        const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+        const paginatedData = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+        useEffect(() => { setPage(1); }, [filters]); // Reset page on filter change
 
         return (
             <div className="space-y-6 animate-fade-in pb-20 md:pb-0">
@@ -299,7 +302,7 @@
                 </div>
                 <div className="card-modern overflow-hidden">
                     <div className="divide-y divide-slate-100">
-                        {filtered.map(t => (
+                        {paginatedData.map(t => (
                             <div key={t.id} className="p-4 flex justify-between items-start active:bg-slate-50 transition">
                                 <div className="flex gap-3">
                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg ${t.type==='income'?'bg-emerald-100 text-emerald-600':'bg-brand-50 text-brand-600'}`}>
@@ -322,6 +325,13 @@
                             </div>
                         ))}
                     </div>
+                    {filtered.length > ITEMS_PER_PAGE && (
+                        <div className="p-4 flex justify-center gap-4 border-t border-slate-100 bg-slate-50/50">
+                            <button disabled={page===1} onClick={()=>setPage(p=>p-1)} className="px-4 py-2 bg-white border rounded-lg text-xs font-bold disabled:opacity-50">Назад</button>
+                            <span className="text-xs font-bold flex items-center">{page} / {totalPages}</span>
+                            <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="px-4 py-2 bg-white border rounded-lg text-xs font-bold disabled:opacity-50">Далі</button>
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -362,9 +372,17 @@
     };
 
     const ManagerModal = ({ db, close, initialData }) => {
-        const [form, setForm] = useState({ name: initialData?.name||'', email: initialData?.email||'', password: initialData?.password||'', permissions: initialData?.permissions||['dashboard','ops'] });
+        const [form, setForm] = useState(initialData || { name: '', email: '', password: '', permissions: ['dashboard', 'ops'] });
         const isEdit = !!initialData;
-        const togglePerm = (p) => setForm(prev => ({...prev, permissions: (prev.permissions||[]).includes(p) ? prev.permissions.filter(x => x !== p) : [...(prev.permissions||[]), p]}));
+        
+        const togglePerm = (p) => {
+            setForm(prev => {
+                const currentPerms = prev.permissions || [];
+                const newPerms = currentPerms.includes(p) ? currentPerms.filter(x => x !== p) : [...currentPerms, p];
+                return { ...prev, permissions: newPerms };
+            });
+        };
+
         const submit = async () => {
             if(!form.name || !form.email) return alert("Заповніть поля");
             try { if(isEdit) await updateDoc(doc(db, "managers", initialData.id), form); else await addDoc(collection(db, "managers"), form); close(); } catch(e) { alert(e.message); }
@@ -412,14 +430,14 @@
     };
 
     const MobileNav = ({ view, setView, canAccess }) => (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-2 pb-safe z-40 flex justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 p-2 pb-safe z-40 flex justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
             {ALL_VIEWS.filter(v=>v.mobile && canAccess(v.id)).map(item => (
                 <button key={item.id} onClick={()=>setView(item.id)} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 transition ${view===item.id ? 'text-brand-600 bg-brand-50' : 'text-slate-400'}`}>
                     <Icon name={item.icon} size={24} className={view===item.id ? 'fill-current' : ''}/>
                     <span className="text-[10px] font-bold">{item.label.split(' ')[0]}</span>
                 </button>
             ))}
-            <button onClick={()=>setView('managers')} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 text-slate-400 ${view==='managers'?'text-brand-600':''}`}><Icon name="menu" size={24}/></button>
+            <button onClick={()=>setView('managers')} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 text-slate-400 ${view==='managers'?'text-brand-600 bg-brand-50':''}`}><Icon name="menu" size={24}/></button>
         </div>
     );
 
