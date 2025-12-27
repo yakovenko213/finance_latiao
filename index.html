@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Latiao Finance System</title>
+    <title>Latiao Finance | Enterprise</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -15,32 +15,50 @@
             theme: {
                 extend: {
                     colors: {
-                        latiao: {
-                            50: '#fff7ed',
-                            100: '#ffedd5',
-                            500: '#FF5722', // Brand Color
-                            600: '#ea580c',
-                            900: '#7c2d12',
+                        brand: {
+                            DEFAULT: '#FF5722', // Latiao Orange
+                            dark: '#E64A19',
+                            light: '#FFCCBC',
+                            bg: '#FFF7F5'
                         },
-                        mono: '#1e1e24',
-                        nova: '#d92828'
+                        dark: {
+                            900: '#121212',
+                            800: '#1E1E1E',
+                            card: '#252525'
+                        }
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                        'glow': '0 0 20px rgba(255, 87, 34, 0.3)'
+                    }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F1F5F9; -webkit-tap-highlight-color: transparent; }
-        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.5); }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .animate-enter { animation: enter 0.3s ease-out; }
-        @keyframes enter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; background-color: #FAFAFA; color: #1e293b; -webkit-tap-highlight-color: transparent; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Glass Effect */
+        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.6); }
+        .glass-dark { background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
+
+        /* Animations */
+        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .tap-effect:active { transform: scale(0.96); transition: transform 0.1s; }
     </style>
 </head>
 <body>
@@ -48,12 +66,11 @@
 <div id="root"></div>
 
 <script type="text/babel" data-type="module">
-    // --- FIREBASE IMPORTS ---
+    // --- FIREBASE SETUP ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-    // --- CONFIG ---
     const firebaseConfig = {
       apiKey: "AIzaSyDIk302oYXye-r4hRE-EB16N6K3T31g1uk",
       authDomain: "latiao-finance.firebaseapp.com",
@@ -69,545 +86,497 @@
 
     const { useState, useEffect, useMemo } = React;
 
-    // --- ICONS COMPONENT ---
-    const Icon = ({ name, size = 20, className }) => {
+    // --- ICONS HELPER ---
+    const Icon = ({ name, size = 20, className, color }) => {
         useEffect(() => { lucide.createIcons(); }, [name]);
-        return <i data-lucide={name} width={size} height={size} className={className}></i>;
+        return <i data-lucide={name} width={size} height={size} className={className} style={{color}}></i>;
     };
 
-    // --- CONSTANTS & DATA MODELS ---
-    const ACCOUNTS = [
-        { id: 'mono', name: 'Monobank ФОП', type: 'bank', color: 'bg-mono text-white' },
-        { id: 'nova', name: 'NovaPay', type: 'bank', color: 'bg-nova text-white' },
-        { id: 'cash', name: 'Готівка', type: 'cash', color: 'bg-green-600 text-white' }
-    ];
-
+    // --- CONSTANTS ---
     const CATEGORIES = {
-        income: ['Продажі', 'Повернення пост.', 'Кешбек', 'Інше'],
-        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Комісії', 'Оренда', 'Податки', 'Офіс', 'Інше']
+        income: ['Продажі', 'Кешбек', 'Повернення', 'Інше'],
+        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Комісії', 'Оренда', 'Інше']
     };
-
+    const ACCOUNTS = [
+        { id: 'mono', name: 'Monobank', type: 'bank', bg: 'bg-gray-900', text: 'text-white' },
+        { id: 'nova', name: 'NovaPay', type: 'bank', bg: 'bg-red-600', text: 'text-white' },
+        { id: 'cash', name: 'Готівка', type: 'cash', bg: 'bg-green-600', text: 'text-white' }
+    ];
     const SMART_RULES = [
-        { keyword: 'Nova Poshta', cat: 'Логістика' },
-        { keyword: 'NovaPay', cat: 'Комісії' },
-        { keyword: 'Meta', cat: 'Реклама' },
-        { keyword: 'Facebook', cat: 'Реклама' },
-        { keyword: 'Prom', cat: 'Реклама' },
-        { keyword: 'Gepard', cat: 'Логістика' }
+        { k: 'Nova', c: 'Логістика' }, { k: 'Gepard', c: 'Логістика' },
+        { k: 'Meta', c: 'Реклама' }, { k: 'Google', c: 'Реклама' }, { k: 'Prom', c: 'Реклама' },
+        { k: 'NovaPay', c: 'Комісії' }
     ];
 
-    // --- MAIN APP COMPONENT ---
+    // --- MAIN APP ---
     const App = () => {
         const [user, setUser] = useState(null);
-        const [view, setView] = useState('auth'); // auth, dashboard, ops, pnl, cashflow, dividends, settings
+        const [view, setView] = useState('auth'); 
         const [transactions, setTransactions] = useState([]);
-        const [loading, setLoading] = useState(true);
-
-        // Auth State
-        const [email, setEmail] = useState('');
-        const [password, setPassword] = useState('');
-        const [authError, setAuthError] = useState('');
-
-        // Modals
-        const [modal, setModal] = useState(null); // 'add', 'dividend'
         
-        // Settings State
-        const [keys, setKeys] = useState({ mono: '', nova: '' });
-
-        // --- AUTH & DATA LISTENER ---
+        // --- AUTH LOGIC ---
         useEffect(() => {
-            const unsubAuth = onAuthStateChanged(auth, (u) => {
+            const unsub = onAuthStateChanged(auth, u => {
                 setUser(u);
-                if (u) {
+                if(u) {
                     setView('dashboard');
                     const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
-                    const unsubDb = onSnapshot(q, (snapshot) => {
-                        setTransactions(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-                        setLoading(false);
-                    });
-                    return () => unsubDb();
+                    onSnapshot(q, snap => setTransactions(snap.docs.map(d => ({id: d.id, ...d.data()}))));
                 } else {
                     setView('auth');
-                    setLoading(false);
                 }
             });
-            return () => unsubAuth();
+            return () => unsub();
         }, []);
 
-        // --- CALCULATIONS ENGINE (THE BRAIN) ---
-        const financials = useMemo(() => {
-            // 1. P&L Logic (Dividends are NOT expenses)
-            const incomeTx = transactions.filter(t => t.type === 'income' && !t.isDividend);
-            const expenseTx = transactions.filter(t => t.type === 'expense' && !t.isDividend);
+        // --- MATH ENGINE ---
+        const data = useMemo(() => {
+            const revenue = transactions.filter(t => t.type === 'income' && !t.isDividend).reduce((s,t) => s+t.amount, 0);
+            const cogs = transactions.filter(t => t.cat === 'Закупівля (COGS)').reduce((s,t) => s+t.amount, 0);
+            const gross = revenue - cogs;
+            const opex = transactions.filter(t => t.type === 'expense' && t.cat !== 'Закупівля (COGS)' && !t.isDividend).reduce((s,t) => s+t.amount, 0);
+            const net = gross - opex;
             
-            const revenue = incomeTx.reduce((sum, t) => sum + t.amount, 0);
-            const cogs = expenseTx.filter(t => t.cat === 'Закупівля (COGS)').reduce((sum, t) => sum + t.amount, 0);
-            const grossProfit = revenue - cogs;
+            // Cash Flow
+            const totalCash = transactions.reduce((s,t) => t.type==='income' ? s+t.amount : s-t.amount, 0);
+            const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s+t.amount, 0);
             
-            const opexTx = expenseTx.filter(t => t.cat !== 'Закупівля (COGS)');
-            const opex = opexTx.reduce((sum, t) => sum + t.amount, 0);
-            const netProfit = grossProfit - opex;
-
-            // 2. Cash Flow Logic (Includes Dividends)
-            const dividends = transactions.filter(t => t.isDividend).reduce((sum, t) => sum + t.amount, 0);
-            const totalInflow = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-            const totalOutflow = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0); // Includes dividends if marked as expense type in DB
-            
-            // Calculate Balances
-            const balances = { mono: 0, nova: 0, cash: 0, total: 0 };
+            // Balances
+            const balances = { mono: 0, nova: 0, cash: 0 };
             transactions.forEach(t => {
-                const val = t.type === 'income' ? t.amount : -t.amount;
-                const accKey = ACCOUNTS.find(a => a.name === t.source)?.id || 'cash';
-                if(balances[accKey] !== undefined) balances[accKey] += val;
-                balances.total += val;
+                const accId = ACCOUNTS.find(a => a.name === t.source)?.id || 'cash';
+                if(balances[accId] !== undefined) balances[accId] += (t.type==='income' ? t.amount : -t.amount);
             });
 
-            // 3. Business Health
-            const grossMargin = revenue ? ((grossProfit / revenue) * 100).toFixed(1) : 0;
-            const netMargin = revenue ? ((netProfit / revenue) * 100).toFixed(1) : 0;
-            
-            // Runway (Average daily burn over last 30 days - simulated)
-            const dailyBurn = (opex + cogs) / 30 || 1;
-            const runwayDays = (balances.total / dailyBurn).toFixed(0);
+            // Runway
+            const burn = (cogs + opex) / 30 || 1;
+            const runway = (totalCash / burn).toFixed(0);
 
-            return { revenue, cogs, grossProfit, opex, netProfit, dividends, balances, grossMargin, netMargin, runwayDays, opexTx };
+            return { revenue, cogs, gross, opex, net, totalCash, dividends, balances, runway };
         }, [transactions]);
 
-        // --- ACTIONS ---
-        const handleLogin = async (e) => {
+        // --- COMPONENTS ---
+
+        // 1. AUTH SCREEN
+        if (view === 'auth') return <AuthScreen />;
+
+        return (
+            <div className="max-w-md mx-auto min-h-screen bg-[#FAFAFA] pb-24 shadow-2xl relative">
+                {/* Dynamic Content */}
+                <div className="animate-fade-in">
+                    {view === 'dashboard' && <Dashboard data={data} txs={transactions} />}
+                    {view === 'pnl' && <PnL data={data} txs={transactions} />}
+                    {view === 'dividends' && <Dividends data={data} txs={transactions} />}
+                    {view === 'ops' && <Operations txs={transactions} />}
+                    {view === 'settings' && <Settings user={user} />}
+                </div>
+
+                {/* Bottom Navigation */}
+                <NavBar current={view} setView={setView} />
+            </div>
+        );
+    };
+
+    // --- SUB-COMPONENTS ---
+
+    const AuthScreen = () => {
+        const [email, setEmail] = useState('');
+        const [pass, setPass] = useState('');
+        const [err, setErr] = useState('');
+
+        const login = async (e) => {
             e.preventDefault();
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (err) {
-                setAuthError("Невірні дані. Спробуйте ще раз.");
-            }
+            try { await signInWithEmailAndPassword(auth, email, pass); } 
+            catch { setErr('Доступ заборонено'); }
         };
 
-        const handleAddTransaction = async (formData) => {
-            // Smart Rules Apply
-            let finalCat = formData.cat;
-            let status = 'confirmed';
-            
-            if (formData.cat === 'Інше' && !formData.isDividend) {
-                const rule = SMART_RULES.find(r => formData.desc.toLowerCase().includes(r.keyword.toLowerCase()));
-                if (rule) finalCat = rule.cat;
-                else status = 'needs_review'; // If no rule and category is 'Other'
-            }
-
-            await addDoc(collection(db, "transactions"), {
-                ...formData,
-                cat: finalCat,
-                status: status,
-                createdAt: Date.now(),
-                date: new Date().toISOString().split('T')[0] // YYYY-MM-DD
-            });
-            setModal(null);
-        };
-
-        const deleteTx = async (id) => {
-            if(confirm("Видалити цю операцію?")) await deleteDoc(doc(db, "transactions", id));
-        };
-
-        // --- UI COMPONENTS ---
-
-        // 1. LOGIN SCREEN
-        if (view === 'auth') {
-            return (
-                <div className="min-h-screen bg-[#111] flex flex-col items-center justify-center p-6 relative overflow-hidden text-white">
-                    <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-latiao-500 rounded-full opacity-20 blur-[100px]"></div>
-                    <div className="z-10 w-full max-w-sm bg-white/10 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl animate-enter">
-                        <div className="flex justify-center mb-6">
-                            <div className="w-16 h-16 bg-latiao-500 rounded-2xl flex items-center justify-center text-3xl font-bold shadow-lg shadow-orange-500/20">L</div>
-                        </div>
-                        <h1 className="text-2xl font-bold text-center mb-2">Latiao Finance</h1>
-                        <p className="text-center text-gray-400 text-xs uppercase tracking-widest mb-8">System Access</p>
-                        
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 ml-1">EMAIL</label>
-                                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-latiao-500 outline-none transition-colors" placeholder="admin@latiao.com"/>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-gray-500 ml-1">PASSWORD</label>
-                                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-latiao-500 outline-none transition-colors" placeholder="••••••••"/>
-                            </div>
-                            {authError && <div className="text-red-400 text-xs text-center">{authError}</div>}
-                            <button type="submit" className="w-full bg-latiao-500 hover:bg-latiao-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-900/50 transition-transform active:scale-95">Увійти</button>
-                        </form>
+        return (
+            <div className="min-h-screen bg-dark-900 text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
+                <div className="absolute top-[-20%] right-[-20%] w-[500px] h-[500px] bg-brand rounded-full opacity-10 blur-[100px]"></div>
+                
+                <div className="glass-dark p-8 rounded-[32px] w-full max-w-sm z-10 animate-slide-up border border-white/10">
+                    <div className="flex justify-center mb-8">
+                        <div className="w-16 h-16 bg-gradient-to-tr from-brand to-orange-500 rounded-2xl flex items-center justify-center text-3xl font-bold shadow-glow text-white">L</div>
                     </div>
+                    <h1 className="text-2xl font-bold text-center mb-2 tracking-tight">Latiao Enterprise</h1>
+                    <p className="text-gray-400 text-center text-xs uppercase tracking-widest mb-8">Secure Access v6.0</p>
+                    
+                    <form onSubmit={login} className="space-y-4">
+                        <div className="group bg-white/5 border border-white/10 rounded-2xl p-1 transition-colors focus-within:border-brand">
+                            <input type="email" placeholder="Email ID" value={email} onChange={e=>setEmail(e.target.value)} 
+                                className="w-full bg-transparent p-3 text-white placeholder-gray-500 outline-none text-sm font-medium"/>
+                        </div>
+                        <div className="group bg-white/5 border border-white/10 rounded-2xl p-1 transition-colors focus-within:border-brand">
+                            <input type="password" placeholder="Passcode" value={pass} onChange={e=>setPass(e.target.value)} 
+                                className="w-full bg-transparent p-3 text-white placeholder-gray-500 outline-none text-sm font-medium"/>
+                        </div>
+                        {err && <div className="text-red-400 text-xs text-center font-medium bg-red-500/10 py-2 rounded-lg">{err}</div>}
+                        <button className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/20 tap-effect transition-all mt-4">
+                            Log In
+                        </button>
+                    </form>
                 </div>
-            );
-        }
+            </div>
+        );
+    };
 
-        // 2. DASHBOARD VIEW
-        const Dashboard = () => (
-            <div className="space-y-6 animate-enter pb-24">
+    const Dashboard = ({ data, txs }) => {
+        const [modal, setModal] = useState(null);
+
+        return (
+            <div className="p-6 space-y-6">
                 {/* Header */}
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center pt-2">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-800">Огляд</h1>
-                        <p className="text-xs text-gray-400">Сьогодні: {new Date().toLocaleDateString('uk-UA')}</p>
+                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Головна</h1>
+                        <p className="text-xs text-gray-400 font-medium">{new Date().toLocaleDateString('uk-UA', {weekday: 'long', day:'numeric', month:'long'})}</p>
                     </div>
-                    <button onClick={() => setModal('add')} className="bg-latiao-500 text-white p-3 rounded-full shadow-lg shadow-orange-200 active:scale-90 transition-transform">
-                        <Icon name="plus" />
-                    </button>
-                </div>
-
-                {/* Alerts Section */}
-                {(financials.balances.total < 0 || financials.runwayDays < 15) && (
-                     <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl flex items-start gap-3">
-                        <Icon name="alert-triangle" className="text-red-500 shrink-0" />
-                        <div>
-                            <h3 className="font-bold text-red-800 text-sm">Увага: Фінансова небезпека</h3>
-                            <p className="text-xs text-red-600">
-                                {financials.balances.total < 0 ? 'Загальний баланс мінусовий!' : 'Кеш-резерв менше 15 днів!'}
-                            </p>
-                        </div>
-                    </div>
-                )}
-
-                {/* KPI Cards */}
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">Чистий прибуток</div>
-                        <div className={`text-xl font-bold ${financials.netProfit>=0 ? 'text-emerald-600':'text-red-600'}`}>
-                            {financials.netProfit.toLocaleString()} ₴
-                        </div>
-                        <div className="text-[10px] text-gray-400 mt-1">Margin: {financials.netMargin}%</div>
-                    </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">Runway (Запас)</div>
-                        <div className="text-xl font-bold text-latiao-500">{financials.runwayDays} днів</div>
-                        <div className="text-[10px] text-gray-400 mt-1">До касового розриву</div>
+                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200">
+                        <span className="font-bold text-brand">L</span>
                     </div>
                 </div>
 
-                {/* Balances */}
-                <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                {/* Total Balance Card */}
+                <div className="bg-gray-900 text-white p-7 rounded-[32px] shadow-soft relative overflow-hidden group tap-effect">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-brand rounded-full blur-[60px] opacity-20 group-hover:opacity-30 transition-opacity"></div>
                     <div className="relative z-10">
-                        <div className="text-gray-400 text-xs font-bold uppercase mb-1">Гроші на рахунках</div>
-                        <div className="text-3xl font-bold mb-6">{financials.balances.total.toLocaleString()} ₴</div>
-                        <div className="space-y-3">
+                        <div className="flex items-center gap-2 mb-2 text-gray-400 text-xs font-bold uppercase tracking-wider">
+                            <Icon name="wallet" size={14}/> Total Cash
+                        </div>
+                        <div className="text-4xl font-bold tracking-tight mb-6">{data.totalCash.toLocaleString()} ₴</div>
+                        <div className="flex gap-2">
                             {ACCOUNTS.map(acc => (
-                                <div key={acc.id} className="flex justify-between items-center text-sm">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-2 h-2 rounded-full ${acc.id==='mono'?'bg-white':(acc.id==='nova'?'bg-red-500':'bg-green-500')}`}></div>
-                                        <span className="text-gray-300">{acc.name}</span>
-                                    </div>
-                                    <span className="font-mono">{financials.balances[acc.id].toLocaleString()}</span>
+                                <div key={acc.id} className="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-medium border border-white/5">
+                                    {acc.name.split(' ')[0]}: {data.balances[acc.id].toLocaleString()}
                                 </div>
                             ))}
                         </div>
                     </div>
                 </div>
 
-                {/* Recent Transactions */}
-                <div>
-                    <div className="flex justify-between items-center mb-3 px-1">
-                        <h3 className="font-bold text-gray-700">Останні операції</h3>
-                        <button onClick={()=>setView('ops')} className="text-xs text-latiao-500 font-bold">Всі</button>
+                {/* Metrics Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-5 rounded-[24px] shadow-soft border border-slate-50">
+                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">Net Profit</div>
+                        <div className={`text-xl font-bold ${data.net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{data.net.toLocaleString()}</div>
+                        <div className="text-[10px] text-gray-400 mt-2 bg-gray-50 inline-block px-2 py-1 rounded-lg">Margin {((data.net/data.revenue)*100 || 0).toFixed(0)}%</div>
                     </div>
-                    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                        {transactions.slice(0, 5).map(t => (
-                            <div key={t.id} className="p-4 border-b border-slate-50 flex justify-between items-center last:border-0">
-                                <div className="flex gap-3 items-center">
-                                    <div className={`p-2 rounded-full ${t.isDividend ? 'bg-purple-100 text-purple-600' : (t.type==='income'?'bg-emerald-100 text-emerald-600':'bg-red-50 text-red-500')}`}>
-                                        <Icon name={t.isDividend ? "gem" : (t.type==='income'?"arrow-down-left":"arrow-up-right")} size={16}/>
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-sm text-gray-800">{t.description}</div>
-                                        <div className="text-[10px] text-gray-400 flex gap-2">
-                                            <span className="bg-slate-100 px-1 rounded">{t.cat}</span>
-                                            {t.source}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className={`font-bold text-sm ${t.type==='income'?'text-emerald-600':'text-gray-900'}`}>
-                                    {t.type==='income'?'+':'-'}{t.amount.toLocaleString()}
-                                </div>
-                            </div>
-                        ))}
+                    <div className="bg-white p-5 rounded-[24px] shadow-soft border border-slate-50">
+                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">Runway</div>
+                        <div className="text-xl font-bold text-brand">{data.runway} днів</div>
+                        <div className="text-[10px] text-gray-400 mt-2 bg-gray-50 inline-block px-2 py-1 rounded-lg">Safety Buffer</div>
                     </div>
                 </div>
-            </div>
-        );
 
-        // 3. P&L VIEW
-        const PnLView = () => (
-             <div className="bg-white min-h-screen p-4 pb-24 animate-enter">
-                <h2 className="text-xl font-bold mb-6">P&L Звіт</h2>
-                <div className="space-y-4">
-                    {/* Revenue Block */}
-                    <div className="p-4 border border-emerald-100 bg-emerald-50 rounded-xl">
-                        <div className="text-xs text-emerald-600 font-bold uppercase">Виручка (Revenue)</div>
-                        <div className="text-2xl font-bold text-emerald-700">+{financials.revenue.toLocaleString()} ₴</div>
-                    </div>
-                    
-                    {/* COGS */}
-                    <div className="flex justify-between items-center px-2 text-sm text-gray-500">
-                        <span>(-) Собівартість (COGS)</span>
-                        <span>{financials.cogs.toLocaleString()}</span>
-                    </div>
-
-                    {/* Gross Profit */}
-                    <div className="p-3 bg-blue-50 border-l-4 border-blue-500 rounded flex justify-between items-center font-bold text-blue-900">
-                        <span>Валовий прибуток</span>
-                        <span>{financials.grossProfit.toLocaleString()}</span>
-                    </div>
-                    <div className="text-right text-xs text-blue-400 mb-4">Margin: {financials.grossMargin}%</div>
-
-                    {/* OpEx Breakdown */}
-                    <div>
-                        <div className="text-xs font-bold text-gray-400 uppercase mb-2">Операційні витрати</div>
-                        <div className="space-y-2">
-                            {Object.entries(financials.opexTx.reduce((acc, t) => {
-                                acc[t.cat] = (acc[t.cat] || 0) + t.amount; return acc;
-                            }, {})).sort((a,b)=>b[1]-a[1]).map(([cat, val]) => (
-                                <div key={cat} className="flex justify-between text-sm py-1 border-b border-dashed border-gray-100">
-                                    <span className="text-gray-600">{cat}</span>
-                                    <span className="font-medium">{val.toLocaleString()}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Net Profit */}
-                    <div className="mt-6 pt-4 border-t-2 border-gray-900 flex justify-between items-center">
-                        <span className="font-bold text-lg">Чистий прибуток</span>
-                        <span className={`text-2xl font-bold ${financials.netProfit>=0?'text-emerald-600':'text-red-600'}`}>
-                            {financials.netProfit.toLocaleString()}
-                        </span>
-                    </div>
-                    <div className="text-center text-xs text-gray-400 mt-8">
-                        * Дивіденди не включені у витрати P&L. Див. Cash Flow.
-                    </div>
-                </div>
-            </div>
-        );
-
-        // 4. DIVIDENDS VIEW
-        const DividendsView = () => (
-             <div className="p-4 pb-24 animate-enter">
-                <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-6 rounded-3xl shadow-xl mb-6">
-                    <h2 className="text-xl font-bold mb-1">Дивіденди</h2>
-                    <p className="text-xs text-gray-400 mb-6">Розподіл прибутку власнику</p>
-                    
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-white/10 p-3 rounded-xl backdrop-blur-md">
-                            <div className="text-[10px] text-gray-300 uppercase">Доступно (Net Profit)</div>
-                            <div className="text-lg font-bold text-emerald-400">{financials.netProfit.toLocaleString()} ₴</div>
-                        </div>
-                         <div className="bg-white/10 p-3 rounded-xl backdrop-blur-md">
-                            <div className="text-[10px] text-gray-300 uppercase">Вже виведено</div>
-                            <div className="text-lg font-bold text-orange-400">{financials.dividends.toLocaleString()} ₴</div>
-                        </div>
-                    </div>
-
-                    <button onClick={() => setModal('dividend')} className="w-full bg-white text-slate-900 font-bold py-3 rounded-xl shadow-lg hover:bg-gray-100 transition-colors">
-                        Виплатити дивіденди
+                {/* Quick Actions */}
+                <div className="grid grid-cols-2 gap-4">
+                    <button onClick={() => setModal('income')} className="bg-emerald-50 text-emerald-700 py-4 rounded-[20px] font-bold text-sm flex items-center justify-center gap-2 tap-effect hover:bg-emerald-100 transition-colors">
+                        <div className="bg-white p-1.5 rounded-full shadow-sm"><Icon name="arrow-down-left" size={16} className="text-emerald-500"/></div>
+                         Дохід
+                    </button>
+                    <button onClick={() => setModal('expense')} className="bg-brand-bg text-brand-dark py-4 rounded-[20px] font-bold text-sm flex items-center justify-center gap-2 tap-effect hover:bg-orange-100 transition-colors">
+                        <div className="bg-white p-1.5 rounded-full shadow-sm"><Icon name="arrow-up-right" size={16} className="text-brand"/></div>
+                        Витрата
                     </button>
                 </div>
 
-                <h3 className="font-bold text-gray-700 mb-3 px-1">Історія виплат</h3>
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
-                    {transactions.filter(t => t.isDividend).length === 0 ? (
-                        <div className="p-8 text-center text-gray-400 text-sm">Виплат ще не було</div>
-                    ) : transactions.filter(t => t.isDividend).map(t => (
-                        <div key={t.id} className="p-4 border-b last:border-0 flex justify-between items-center">
+                {/* Recent Transactions List */}
+                <div>
+                    <h3 className="font-bold text-gray-800 mb-4 px-1 text-lg">Стрічка подій</h3>
+                    <div className="bg-white rounded-[24px] shadow-soft border border-slate-50 overflow-hidden">
+                        {txs.slice(0, 5).map(t => <TxRow key={t.id} t={t} />)}
+                    </div>
+                </div>
+
+                {modal && <TransactionModal type={modal} close={()=>setModal(null)} />}
+            </div>
+        );
+    };
+
+    const PnL = ({ data }) => (
+        <div className="p-6 space-y-6 pt-8 animate-slide-up">
+            <h2 className="text-2xl font-bold text-gray-900">P&L Report</h2>
+            
+            <div className="bg-white rounded-[24px] shadow-soft border border-slate-50 overflow-hidden">
+                <div className="p-6 border-b border-gray-50 bg-emerald-50/50">
+                    <div className="text-xs text-emerald-600 font-bold uppercase mb-1">Total Revenue</div>
+                    <div className="text-3xl font-bold text-emerald-700">+{data.revenue.toLocaleString()} ₴</div>
+                </div>
+                
+                <div className="p-6 space-y-4">
+                    <div className="flex justify-between text-sm text-gray-500 font-medium">
+                        <span>(-) COGS</span>
+                        <span>{data.cogs.toLocaleString()}</span>
+                    </div>
+                    
+                    <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                        <div className="flex justify-between items-center font-bold text-blue-900 text-lg">
+                            <span>Gross Profit</span>
+                            <span>{data.gross.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <div className="pt-2">
+                        <div className="text-xs font-bold text-gray-400 uppercase mb-2">OpEx (Витрати)</div>
+                        <div className="flex justify-between text-sm font-bold text-gray-700 mb-1">
+                            <span>Total OpEx</span>
+                            <span className="text-red-500">-{data.opex.toLocaleString()}</span>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 mt-2 border-t border-dashed border-gray-200">
+                        <div className="flex justify-between items-center">
+                            <span className="text-lg font-bold text-gray-900">Net Profit</span>
+                            <span className={`text-2xl font-bold ${data.net>=0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {data.net.toLocaleString()}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div className="text-center text-xs text-gray-400 font-medium max-w-xs mx-auto">
+                * Дивіденди вилучені з розрахунку P&L згідно стандартів управлінського обліку.
+            </div>
+        </div>
+    );
+
+    const Dividends = ({ data, txs }) => {
+        const [modal, setModal] = useState(false);
+        return (
+            <div className="p-6 space-y-6 pt-8 animate-slide-up">
+                <div className="bg-gray-900 text-white p-8 rounded-[32px] shadow-soft relative overflow-hidden">
+                     <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500 rounded-full blur-[80px] opacity-30"></div>
+                     <h2 className="text-xl font-bold mb-1 relative z-10">Дивіденди</h2>
+                     <p className="text-xs text-gray-400 mb-8 relative z-10">Profit Distribution Center</p>
+                     
+                     <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
+                         <div className="bg-white/10 backdrop-blur px-4 py-3 rounded-2xl border border-white/5">
+                             <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Available Net</div>
+                             <div className="text-lg font-bold text-emerald-400">{data.net.toLocaleString()}</div>
+                         </div>
+                         <div className="bg-white/10 backdrop-blur px-4 py-3 rounded-2xl border border-white/5">
+                             <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Withdrawn</div>
+                             <div className="text-lg font-bold text-purple-400">{data.dividends.toLocaleString()}</div>
+                         </div>
+                     </div>
+                     
+                     <button onClick={()=>setModal(true)} className="relative z-10 w-full bg-white text-gray-900 font-bold py-4 rounded-xl shadow-lg tap-effect">
+                         Виплатити
+                     </button>
+                </div>
+
+                <div className="bg-white rounded-[24px] shadow-soft border border-slate-50 p-6">
+                    <h3 className="font-bold text-gray-900 mb-4">Історія виплат</h3>
+                    {txs.filter(t=>t.isDividend).map(t => (
+                        <div key={t.id} className="flex justify-between py-3 border-b border-gray-50 last:border-0">
                             <div>
-                                <div className="font-bold text-sm">{t.description}</div>
-                                <div className="text-xs text-gray-400">{t.date} | {t.source}</div>
+                                <div className="font-bold text-gray-800 text-sm">{t.description}</div>
+                                <div className="text-xs text-gray-400">{t.date}</div>
                             </div>
                             <div className="font-bold text-gray-900">-{t.amount.toLocaleString()}</div>
                         </div>
                     ))}
+                    {txs.filter(t=>t.isDividend).length===0 && <div className="text-center text-sm text-gray-400 py-4">Немає даних</div>}
                 </div>
+                {modal && <TransactionModal type="dividend" close={()=>setModal(false)} />}
             </div>
         );
+    };
 
-        // 5. SETTINGS / INTEGRATIONS
-        const SettingsView = () => (
-            <div className="p-4 pb-24 animate-enter space-y-6">
-                <h2 className="text-2xl font-bold">Налаштування</h2>
-                
-                {/* Integrations */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 className="font-bold mb-4 flex items-center gap-2 text-sm uppercase text-gray-500">
-                        <Icon name="link" size={16}/> Інтеграції
-                    </h3>
-                    
-                    <div className="space-y-4">
-                        {/* Mono */}
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="font-bold flex items-center gap-2"><div className="w-3 h-3 bg-black rounded-full"></div> Monobank</span>
-                                <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded">Active</span>
-                            </div>
-                            <input type="password" placeholder="X-Token (Masked)" className="w-full bg-white border border-gray-200 rounded p-2 text-xs" disabled value="••••••••••••••••" />
-                            <button className="mt-2 text-xs text-blue-600 font-bold">Перевірити з'єднання</button>
-                        </div>
-
-                        {/* Nova */}
-                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100">
-                            <div className="flex justify-between items-center mb-2">
-                                <span className="font-bold flex items-center gap-2"><div className="w-3 h-3 bg-red-600 rounded-full"></div> NovaPay</span>
-                                <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded">Not Configured</span>
-                            </div>
-                            <input type="password" placeholder="Client ID / Token" className="w-full bg-white border border-gray-200 rounded p-2 text-xs" />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Automation Rules */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                     <h3 className="font-bold mb-4 flex items-center gap-2 text-sm uppercase text-gray-500">
-                        <Icon name="zap" size={16}/> Авто-категоризація
-                    </h3>
-                    <div className="text-xs text-gray-400 mb-3">Активні правила:</div>
-                    <div className="flex flex-wrap gap-2">
-                        {SMART_RULES.map((rule, i) => (
-                            <span key={i} className="text-[10px] bg-latiao-50 border border-latiao-100 text-latiao-900 px-2 py-1 rounded-lg">
-                                "{rule.keyword}" → {rule.cat}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-                
-                <button onClick={() => signOut(auth)} className="w-full py-4 text-red-500 font-bold bg-white rounded-xl shadow-sm border border-red-50">
-                    Вийти з системи
-                </button>
+    const Operations = ({ txs }) => (
+        <div className="p-6 pt-8 animate-slide-up">
+            <h2 className="text-2xl font-bold mb-6">Журнал операцій</h2>
+            <div className="bg-white rounded-[24px] shadow-soft border border-slate-50 overflow-hidden">
+                {txs.map(t => <TxRow key={t.id} t={t} canDelete={true} />)}
             </div>
-        );
+        </div>
+    );
 
-        // 6. ADD TRANSACTION MODAL
-        const AddModal = () => {
-            const [form, setForm] = useState({ 
-                amount: '', 
-                desc: '', 
-                cat: 'Інше', 
-                source: 'Monobank ФОП', 
-                type: modal === 'dividend' ? 'expense' : 'expense',
-                isDividend: modal === 'dividend'
-            });
-
-            return (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-4 animate-enter">
-                    <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-lg">
-                                {modal === 'dividend' ? '💸 Дивіденди' : 'Нова операція'}
-                            </h3>
-                            <button onClick={() => setModal(null)} className="bg-gray-100 p-2 rounded-full"><Icon name="x" size={16}/></button>
+    const Settings = ({ user }) => (
+        <div className="p-6 pt-8 space-y-6 animate-slide-up">
+            <h2 className="text-2xl font-bold">Налаштування</h2>
+            
+            <div className="bg-white p-6 rounded-[24px] shadow-soft border border-slate-50">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="bg-orange-100 p-2 rounded-lg text-brand"><Icon name="cpu" size={20}/></div>
+                    <div>
+                        <h3 className="font-bold text-gray-900">Automation Rules</h3>
+                        <p className="text-xs text-gray-400">Активна авто-категоризація</p>
+                    </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {SMART_RULES.map((r,i) => (
+                        <div key={i} className="text-[10px] font-bold bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1.5 rounded-full">
+                            {r.k} → {r.c}
                         </div>
+                    ))}
+                </div>
+            </div>
 
-                        {/* Type Switcher */}
-                        {modal !== 'dividend' && (
-                            <div className="flex bg-gray-100 p-1 rounded-xl mb-4">
-                                <button onClick={()=>setForm({...form, type:'income'})} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${form.type==='income'?'bg-emerald-500 text-white shadow-md':'text-gray-500'}`}>Надходження</button>
-                                <button onClick={()=>setForm({...form, type:'expense'})} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${form.type==='expense'?'bg-latiao-500 text-white shadow-md':'text-gray-500'}`}>Витрата</button>
-                            </div>
-                        )}
-
-                        <div className="space-y-4">
+            <div className="bg-white p-6 rounded-[24px] shadow-soft border border-slate-50">
+                <h3 className="font-bold mb-4 text-sm text-gray-500 uppercase">Integrations</h3>
+                <div className="space-y-4">
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center"><Icon name="credit-card" size={16} className="text-white"/></div>
                             <div>
-                                <label className="text-[10px] font-bold text-gray-400 uppercase">Сума</label>
-                                <input type="number" value={form.amount} onChange={e=>setForm({...form, amount:Number(e.target.value)})} className="w-full text-4xl font-bold border-b border-gray-200 py-2 focus:border-latiao-500 outline-none" placeholder="0" autoFocus />
+                                <div className="font-bold text-sm">Monobank</div>
+                                <div className="text-[10px] text-green-600 font-bold">● Connected</div>
                             </div>
+                        </div>
+                        <div className="text-xs font-mono bg-white px-2 py-1 rounded border">•••• 8392</div>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">NP</div>
+                            <div>
+                                <div className="font-bold text-sm">NovaPay</div>
+                                <div className="text-[10px] text-gray-400">Not configured</div>
+                            </div>
+                        </div>
+                        <button className="text-xs font-bold text-brand">Connect</button>
+                    </div>
+                </div>
+            </div>
 
-                            {modal !== 'dividend' && (
-                                <>
-                                    <input type="text" value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className="w-full bg-gray-50 p-3 rounded-xl text-sm outline-none border border-transparent focus:border-latiao-500" placeholder="Опис (Nova Poshta...)" />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <select value={form.cat} onChange={e=>setForm({...form, cat:e.target.value})} className="bg-gray-50 p-3 rounded-xl text-sm outline-none">
-                                            {CATEGORIES[form.type].map(c => <option key={c} value={c}>{c}</option>)}
-                                        </select>
-                                        <select value={form.source} onChange={e=>setForm({...form, source:e.target.value})} className="bg-gray-50 p-3 rounded-xl text-sm outline-none">
-                                            {ACCOUNTS.map(a => <option key={a.name} value={a.name}>{a.name}</option>)}
-                                        </select>
-                                    </div>
-                                </>
-                            )}
-                            
-                            {modal === 'dividend' && (
-                                <div className="bg-orange-50 p-3 rounded-xl border border-orange-100 text-xs text-orange-800">
-                                    Ця сума буде списана з рахунку, але не буде врахована як витрата бізнесу в P&L звіті.
-                                </div>
-                            )}
+            <button onClick={()=>signOut(auth)} className="w-full py-4 text-red-500 font-bold bg-white rounded-2xl shadow-sm border border-red-50 tap-effect">
+                Log Out
+            </button>
+        </div>
+    );
 
-                            <button onClick={()=>handleAddTransaction(form)} className="w-full bg-gray-900 text-white py-4 rounded-xl font-bold shadow-lg mt-2">
-                                Підтвердити
-                            </button>
+    // --- SHARED UI ELEMENTS ---
+
+    const NavBar = ({ current, setView }) => {
+        const items = [
+            { id: 'dashboard', icon: 'layout-grid', l: 'Головна' },
+            { id: 'ops', icon: 'list', l: 'Події' },
+            { id: 'pnl', icon: 'pie-chart', l: 'P&L' },
+            { id: 'dividends', icon: 'gem', l: 'Дивіденди' },
+            { id: 'settings', icon: 'settings', l: 'Опції' },
+        ];
+        return (
+            <div className="fixed bottom-6 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[24px] p-2 z-50 flex justify-between items-center">
+                {items.map(i => (
+                    <button key={i.id} onClick={()=>setView(i.id)} className={`p-3 rounded-2xl transition-all duration-300 ${current===i.id ? 'bg-brand text-white shadow-lg shadow-orange-500/30 scale-105' : 'text-gray-400 hover:text-gray-600'}`}>
+                        <Icon name={i.icon} size={22} strokeWidth={current===i.id?2.5:2} />
+                    </button>
+                ))}
+            </div>
+        );
+    };
+
+    const TxRow = ({ t, canDelete }) => {
+        const handleDelete = async () => { if(confirm('Видалити?')) await deleteDoc(doc(db, "transactions", t.id)); };
+        const icon = t.isDividend ? 'gem' : (t.type==='income' ? 'arrow-down-left' : 'arrow-up-right');
+        const colorClass = t.isDividend ? 'bg-purple-100 text-purple-600' : (t.type==='income' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-50 text-brand');
+        
+        return (
+            <div className="p-4 border-b border-gray-50 flex justify-between items-center last:border-0 hover:bg-gray-50/50 transition-colors">
+                <div className="flex gap-4 items-center">
+                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${colorClass}`}>
+                        <Icon name={icon} size={18} />
+                    </div>
+                    <div>
+                        <div className="font-bold text-sm text-gray-800">{t.description || 'Операція'}</div>
+                        <div className="text-[10px] text-gray-400 font-medium flex gap-2 mt-0.5">
+                            <span className="bg-gray-100 px-1.5 py-0.5 rounded">{t.cat}</span>
+                            <span>{t.date}</span>
                         </div>
                     </div>
                 </div>
-            );
+                <div className="text-right">
+                    <div className={`font-bold text-sm ${t.type==='income'?'text-emerald-600':'text-gray-900'}`}>
+                        {t.type==='income'?'+':'-'}{t.amount.toLocaleString()}
+                    </div>
+                    {canDelete && <button onClick={handleDelete} className="text-gray-300 hover:text-red-500 mt-1"><Icon name="trash-2" size={14}/></button>}
+                </div>
+            </div>
+        );
+    };
+
+    const TransactionModal = ({ type, close }) => {
+        const [form, setForm] = useState({ amount: '', desc: '', cat: 'Інше', source: 'Monobank ФОП' });
+        
+        const submit = async () => {
+            if(!form.amount) return;
+            const isDiv = type === 'dividend';
+            let cat = form.cat;
+            
+            // Smart Rules
+            if(!isDiv && form.cat === 'Інше') {
+                const rule = SMART_RULES.find(r => form.desc.toLowerCase().includes(r.k.toLowerCase()));
+                if(rule) cat = rule.c;
+            } else if(isDiv) {
+                cat = 'Дивіденди';
+            }
+
+            await addDoc(collection(db, "transactions"), {
+                amount: Number(form.amount),
+                description: form.desc || (isDiv?'Виплата дивідендів':''),
+                cat, source: form.source,
+                type: (type==='dividend' || type==='expense') ? 'expense' : 'income',
+                isDividend: isDiv,
+                date: new Date().toLocaleDateString('uk-UA'),
+                createdAt: Date.now()
+            });
+            close();
         };
 
-        // --- NAVIGATION BAR ---
-        const NavBar = () => (
-            <div className="fixed bottom-0 w-full bg-white border-t border-gray-100 pb-safe z-40">
-                <div className="flex justify-around items-center p-2">
-                    {[
-                        { id: 'dashboard', icon: 'layout-dashboard', label: 'Головна' },
-                        { id: 'ops', icon: 'list', label: 'Операції' },
-                        { id: 'pnl', icon: 'pie-chart', label: 'P&L' },
-                        { id: 'dividends', icon: 'gem', label: 'Дивіденди' },
-                        { id: 'settings', icon: 'settings', label: 'Налаштування' },
-                    ].map(item => (
-                        <button key={item.id} onClick={()=>setView(item.id)} className={`flex flex-col items-center p-2 rounded-xl transition-colors ${view===item.id ? 'text-latiao-500 bg-orange-50' : 'text-gray-400'}`}>
-                            <Icon name={item.icon} size={20} strokeWidth={view===item.id?2.5:2} />
-                            <span className="text-[10px] font-medium mt-1">{item.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
-        );
-
-        // --- OPS VIEW (Transactions List) ---
-        const OpsView = () => (
-             <div className="p-4 pb-24 animate-enter">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold">Журнал операцій</h2>
-                    <div className="flex gap-2">
-                        <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">Filter</span>
-                        <span className="text-xs bg-white border px-2 py-1 rounded text-gray-500">Export</span>
-                    </div>
-                </div>
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                    {transactions.map(t => (
-                        <div key={t.id} className="p-4 border-b border-slate-50 flex justify-between items-center hover:bg-slate-50">
-                            <div className="flex gap-3 items-center">
-                                <div className={`w-2 h-10 rounded-full ${t.isDividend ? 'bg-purple-500' : (t.type==='income'?'bg-emerald-500':'bg-latiao-500')}`}></div>
-                                <div>
-                                    <div className="font-bold text-sm text-gray-800">{t.description || 'Без опису'}</div>
-                                    <div className="text-[10px] text-gray-400 mt-0.5">
-                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600 mr-2">{t.cat}</span>
-                                        {t.date} • {t.source}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <div className={`font-bold text-sm ${t.type==='income'?'text-emerald-600':'text-gray-900'}`}>
-                                    {t.type==='income'?'+':'-'}{t.amount.toLocaleString()}
-                                </div>
-                                <button onClick={()=>deleteTx(t.id)} className="text-gray-300 hover:text-red-500 mt-1"><Icon name="trash-2" size={14}/></button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-             </div>
-        );
+        const title = type==='dividend' ? 'Виплата дивідендів' : (type==='income' ? 'Новий дохід' : 'Нова витрата');
+        const theme = type==='dividend' ? 'bg-slate-900' : (type==='income' ? 'bg-emerald-500' : 'bg-brand');
 
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-[#F8FAFC] shadow-2xl relative overflow-hidden">
-                {view === 'dashboard' && <Dashboard />}
-                {view === 'pnl' && <PnLView />}
-                {view === 'dividends' && <DividendsView />}
-                {view === 'settings' && <SettingsView />}
-                {view === 'ops' && <OpsView />}
-                
-                {view !== 'auth' && <NavBar />}
-                {modal && <AddModal />}
+            <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4">
+                <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={close}></div>
+                <div className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl z-10 animate-slide-up">
+                    <div className={`${theme} p-6 text-white flex justify-between items-center`}>
+                        <h3 className="font-bold text-lg flex items-center gap-2">
+                             <Icon name={type==='dividend'?'gem':(type==='income'?'arrow-down-left':'arrow-up-right')} size={20}/> {title}
+                        </h3>
+                        <button onClick={close} className="bg-white/20 p-2 rounded-full hover:bg-white/30"><Icon name="x" size={16}/></button>
+                    </div>
+                    
+                    <div className="p-6 space-y-5">
+                        <div>
+                            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Сума</label>
+                            <input type="number" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="w-full text-4xl font-bold border-b border-gray-100 py-2 focus:border-brand outline-none text-gray-800 placeholder-gray-200" placeholder="0" autoFocus />
+                        </div>
+
+                        {type !== 'dividend' && (
+                            <>
+                                <div className="space-y-1">
+                                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">Опис</label>
+                                    <input type="text" value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl text-sm outline-none focus:border-brand transition-colors" placeholder="Напр. Nova Poshta" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-gray-400 uppercase ml-1">Категорія</label>
+                                        <select value={form.cat} onChange={e=>setForm({...form, cat:e.target.value})} className="w-full bg-gray-50 border border-gray-100 p-3 rounded-xl text-sm outline-none">
+                                            {CATEGORIES[type==='income'?'income':'expense'].map(c=><option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-bold text-gray-400 uppercase ml-1">Рахунок</label>
+                                        <select value={form.source} onChange={e=>setForm({...form, source:e.target.value})} className="w-full bg-gray-50 border border-gray-100 p-3 rounded-xl text-sm outline-none">
+                                            {ACCOUNTS.map(a=><option key={a.name} value={a.name}>{a.name}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {type === 'dividend' && (
+                             <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-xs text-orange-800 leading-relaxed">
+                                 <strong>Увага:</strong> Ця операція зменшить баланс на рахунку, але не буде відображена як операційна витрата в P&L звіті.
+                             </div>
+                        )}
+
+                        <button onClick={submit} className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg tap-effect mt-2 ${theme}`}>
+                            Підтвердити
+                        </button>
+                    </div>
+                </div>
             </div>
         );
     };
