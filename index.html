@@ -2,63 +2,55 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Latiao Finance | Enterprise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latiao Finance | Desktop Enterprise</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: { 
+                        sans: ['Manrope', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
                     colors: {
                         brand: {
-                            DEFAULT: '#FF5722', // Latiao Orange
-                            dark: '#E64A19',
-                            light: '#FFCCBC',
-                            bg: '#FFF7F5'
+                            50: '#fff7ed',
+                            100: '#ffedd5',
+                            500: '#FF5722', // Latiao Brand
+                            600: '#ea580c',
+                            900: '#7c2d12',
                         },
-                        dark: {
-                            900: '#121212',
-                            800: '#1E1E1E',
-                            card: '#252525'
-                        }
+                        dark: '#0f172a'
                     },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     boxShadow: {
-                        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
-                        'glow': '0 0 20px rgba(255, 87, 34, 0.3)'
+                        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
                     }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #FAFAFA; color: #1e293b; -webkit-tap-highlight-color: transparent; }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        
-        /* Glass Effect */
-        .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.6); }
-        .glass-dark { background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
 
-        /* Animations */
-        .animate-slide-up { animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        .animate-fade-in { animation: fadeIn 0.3s ease-out; }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    <style>
+        body { background-color: #F8FAFC; color: #1e293b; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .sidebar-link.active { background: #FF5722; color: white; box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3); }
+        .sidebar-link:hover:not(.active) { background: #fff7ed; color: #c2410c; }
         
-        .tap-effect:active { transform: scale(0.96); transition: transform 0.1s; }
+        /* Custom Table Styling */
+        .table-row-hover:hover td { background-color: #f8fafc; }
+        
+        /* Animation */
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -66,7 +58,7 @@
 <div id="root"></div>
 
 <script type="text/babel" data-type="module">
-    // --- FIREBASE SETUP ---
+    // --- FIREBASE CONFIG ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -86,50 +78,63 @@
 
     const { useState, useEffect, useMemo } = React;
 
-    // --- ICONS HELPER ---
-    const Icon = ({ name, size = 20, className, color }) => {
+    // --- ICONS WRAPPER ---
+    const Icon = ({ name, size = 18, className }) => {
         useEffect(() => { lucide.createIcons(); }, [name]);
-        return <i data-lucide={name} width={size} height={size} className={className} style={{color}}></i>;
+        return <i data-lucide={name} width={size} height={size} className={className}></i>;
     };
 
     // --- CONSTANTS ---
     const CATEGORIES = {
         income: ['Продажі', 'Кешбек', 'Повернення', 'Інше'],
-        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Комісії', 'Оренда', 'Інше']
+        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Інше']
     };
     const ACCOUNTS = [
-        { id: 'mono', name: 'Monobank', type: 'bank', bg: 'bg-gray-900', text: 'text-white' },
-        { id: 'nova', name: 'NovaPay', type: 'bank', bg: 'bg-red-600', text: 'text-white' },
-        { id: 'cash', name: 'Готівка', type: 'cash', bg: 'bg-green-600', text: 'text-white' }
+        { id: 'mono', name: 'Monobank ФОП', type: 'bank', color: 'bg-gray-900' },
+        { id: 'nova', name: 'NovaPay', type: 'bank', color: 'bg-red-600' },
+        { id: 'cash', name: 'Готівка', type: 'cash', color: 'bg-green-600' }
     ];
     const SMART_RULES = [
         { k: 'Nova', c: 'Логістика' }, { k: 'Gepard', c: 'Логістика' },
-        { k: 'Meta', c: 'Реклама' }, { k: 'Google', c: 'Реклама' }, { k: 'Prom', c: 'Реклама' },
-        { k: 'NovaPay', c: 'Комісії' }
+        { k: 'Meta', c: 'Реклама' }, { k: 'Google', c: 'Реклама' }, 
+        { k: 'Prom', c: 'Реклама' }, { k: 'NovaPay', c: 'Комісії' }
     ];
 
     // --- MAIN APP ---
     const App = () => {
         const [user, setUser] = useState(null);
-        const [view, setView] = useState('auth'); 
+        const [view, setView] = useState('auth');
         const [transactions, setTransactions] = useState([]);
-        
-        // --- AUTH LOGIC ---
+        const [loading, setLoading] = useState(true);
+
+        // Auth
+        const [email, setEmail] = useState('');
+        const [pass, setPass] = useState('');
+        const [authError, setAuthError] = useState('');
+
+        // Modal
+        const [modalType, setModalType] = useState(null); // 'income', 'expense', 'dividend'
+
+        // --- AUTH & DATA ---
         useEffect(() => {
             const unsub = onAuthStateChanged(auth, u => {
                 setUser(u);
-                if(u) {
+                if (u) {
                     setView('dashboard');
                     const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
-                    onSnapshot(q, snap => setTransactions(snap.docs.map(d => ({id: d.id, ...d.data()}))));
+                    onSnapshot(q, snap => {
+                        setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+                        setLoading(false);
+                    });
                 } else {
                     setView('auth');
+                    setLoading(false);
                 }
             });
             return () => unsub();
         }, []);
 
-        // --- MATH ENGINE ---
+        // --- CALCULATIONS ---
         const data = useMemo(() => {
             const revenue = transactions.filter(t => t.type === 'income' && !t.isDividend).reduce((s,t) => s+t.amount, 0);
             const cogs = transactions.filter(t => t.cat === 'Закупівля (COGS)').reduce((s,t) => s+t.amount, 0);
@@ -148,353 +153,347 @@
                 if(balances[accId] !== undefined) balances[accId] += (t.type==='income' ? t.amount : -t.amount);
             });
 
-            // Runway
+            const margin = revenue ? ((net / revenue) * 100).toFixed(1) : 0;
             const burn = (cogs + opex) / 30 || 1;
             const runway = (totalCash / burn).toFixed(0);
 
-            return { revenue, cogs, gross, opex, net, totalCash, dividends, balances, runway };
+            return { revenue, cogs, gross, opex, net, totalCash, dividends, balances, margin, runway };
         }, [transactions]);
 
-        // --- COMPONENTS ---
-
-        // 1. AUTH SCREEN
-        if (view === 'auth') return <AuthScreen />;
-
-        return (
-            <div className="max-w-md mx-auto min-h-screen bg-[#FAFAFA] pb-24 shadow-2xl relative">
-                {/* Dynamic Content */}
-                <div className="animate-fade-in">
-                    {view === 'dashboard' && <Dashboard data={data} txs={transactions} />}
-                    {view === 'pnl' && <PnL data={data} txs={transactions} />}
-                    {view === 'dividends' && <Dividends data={data} txs={transactions} />}
-                    {view === 'ops' && <Operations txs={transactions} />}
-                    {view === 'settings' && <Settings user={user} />}
-                </div>
-
-                {/* Bottom Navigation */}
-                <NavBar current={view} setView={setView} />
-            </div>
-        );
-    };
-
-    // --- SUB-COMPONENTS ---
-
-    const AuthScreen = () => {
-        const [email, setEmail] = useState('');
-        const [pass, setPass] = useState('');
-        const [err, setErr] = useState('');
-
-        const login = async (e) => {
+        const handleLogin = async (e) => {
             e.preventDefault();
             try { await signInWithEmailAndPassword(auth, email, pass); } 
-            catch { setErr('Доступ заборонено'); }
+            catch { setAuthError('Доступ заборонено'); }
         };
 
-        return (
-            <div className="min-h-screen bg-dark-900 text-white flex flex-col items-center justify-center p-6 relative overflow-hidden">
-                <div className="absolute top-[-20%] right-[-20%] w-[500px] h-[500px] bg-brand rounded-full opacity-10 blur-[100px]"></div>
+        const deleteTx = async (id) => {
+            if(confirm('Видалити запис?')) await deleteDoc(doc(db, "transactions", id));
+        };
+
+        // --- VIEWS ---
+
+        // 1. AUTH SCREEN (High-end SaaS style)
+        if (view === 'auth') return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+                <div className="absolute top-[-200px] left-[-200px] w-[600px] h-[600px] bg-brand-500 rounded-full blur-[150px] opacity-20"></div>
                 
-                <div className="glass-dark p-8 rounded-[32px] w-full max-w-sm z-10 animate-slide-up border border-white/10">
-                    <div className="flex justify-center mb-8">
-                        <div className="w-16 h-16 bg-gradient-to-tr from-brand to-orange-500 rounded-2xl flex items-center justify-center text-3xl font-bold shadow-glow text-white">L</div>
+                <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-12 rounded-3xl w-full max-w-md shadow-2xl z-10 fade-in">
+                    <div className="mb-8 text-center">
+                        <div className="w-16 h-16 bg-brand-500 rounded-2xl mx-auto flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-orange-500/30 mb-4">L</div>
+                        <h1 className="text-3xl font-bold text-white tracking-tight">Latiao Finance</h1>
+                        <p className="text-slate-400 mt-2 text-sm uppercase tracking-widest">Enterprise Access</p>
                     </div>
-                    <h1 className="text-2xl font-bold text-center mb-2 tracking-tight">Latiao Enterprise</h1>
-                    <p className="text-gray-400 text-center text-xs uppercase tracking-widest mb-8">Secure Access v6.0</p>
-                    
-                    <form onSubmit={login} className="space-y-4">
-                        <div className="group bg-white/5 border border-white/10 rounded-2xl p-1 transition-colors focus-within:border-brand">
-                            <input type="email" placeholder="Email ID" value={email} onChange={e=>setEmail(e.target.value)} 
-                                className="w-full bg-transparent p-3 text-white placeholder-gray-500 outline-none text-sm font-medium"/>
-                        </div>
-                        <div className="group bg-white/5 border border-white/10 rounded-2xl p-1 transition-colors focus-within:border-brand">
-                            <input type="password" placeholder="Passcode" value={pass} onChange={e=>setPass(e.target.value)} 
-                                className="w-full bg-transparent p-3 text-white placeholder-gray-500 outline-none text-sm font-medium"/>
-                        </div>
-                        {err && <div className="text-red-400 text-xs text-center font-medium bg-red-500/10 py-2 rounded-lg">{err}</div>}
-                        <button className="w-full bg-brand hover:bg-brand-dark text-white font-bold py-4 rounded-2xl shadow-lg shadow-orange-500/20 tap-effect transition-all mt-4">
-                            Log In
+                    <form onSubmit={handleLogin} className="space-y-5">
+                        <input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} 
+                            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-white focus:border-brand-500 outline-none transition-colors" />
+                        <input type="password" placeholder="Password" value={pass} onChange={e=>setPass(e.target.value)} 
+                            className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-white focus:border-brand-500 outline-none transition-colors" />
+                        {authError && <div className="text-red-400 text-sm text-center">{authError}</div>}
+                        <button className="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/20 transition-all transform active:scale-95">
+                            Увійти в систему
                         </button>
                     </form>
                 </div>
             </div>
         );
-    };
 
-    const Dashboard = ({ data, txs }) => {
-        const [modal, setModal] = useState(null);
-
+        // 2. MAIN LAYOUT
         return (
-            <div className="p-6 space-y-6">
-                {/* Header */}
-                <div className="flex justify-between items-center pt-2">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Головна</h1>
-                        <p className="text-xs text-gray-400 font-medium">{new Date().toLocaleDateString('uk-UA', {weekday: 'long', day:'numeric', month:'long'})}</p>
-                    </div>
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200">
-                        <span className="font-bold text-brand">L</span>
-                    </div>
-                </div>
-
-                {/* Total Balance Card */}
-                <div className="bg-gray-900 text-white p-7 rounded-[32px] shadow-soft relative overflow-hidden group tap-effect">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-brand rounded-full blur-[60px] opacity-20 group-hover:opacity-30 transition-opacity"></div>
-                    <div className="relative z-10">
-                        <div className="flex items-center gap-2 mb-2 text-gray-400 text-xs font-bold uppercase tracking-wider">
-                            <Icon name="wallet" size={14}/> Total Cash
-                        </div>
-                        <div className="text-4xl font-bold tracking-tight mb-6">{data.totalCash.toLocaleString()} ₴</div>
-                        <div className="flex gap-2">
-                            {ACCOUNTS.map(acc => (
-                                <div key={acc.id} className="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-medium border border-white/5">
-                                    {acc.name.split(' ')[0]}: {data.balances[acc.id].toLocaleString()}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Metrics Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-white p-5 rounded-[24px] shadow-soft border border-slate-50">
-                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">Net Profit</div>
-                        <div className={`text-xl font-bold ${data.net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{data.net.toLocaleString()}</div>
-                        <div className="text-[10px] text-gray-400 mt-2 bg-gray-50 inline-block px-2 py-1 rounded-lg">Margin {((data.net/data.revenue)*100 || 0).toFixed(0)}%</div>
-                    </div>
-                    <div className="bg-white p-5 rounded-[24px] shadow-soft border border-slate-50">
-                        <div className="text-xs text-gray-400 font-bold uppercase mb-1">Runway</div>
-                        <div className="text-xl font-bold text-brand">{data.runway} днів</div>
-                        <div className="text-[10px] text-gray-400 mt-2 bg-gray-50 inline-block px-2 py-1 rounded-lg">Safety Buffer</div>
-                    </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="grid grid-cols-2 gap-4">
-                    <button onClick={() => setModal('income')} className="bg-emerald-50 text-emerald-700 py-4 rounded-[20px] font-bold text-sm flex items-center justify-center gap-2 tap-effect hover:bg-emerald-100 transition-colors">
-                        <div className="bg-white p-1.5 rounded-full shadow-sm"><Icon name="arrow-down-left" size={16} className="text-emerald-500"/></div>
-                         Дохід
-                    </button>
-                    <button onClick={() => setModal('expense')} className="bg-brand-bg text-brand-dark py-4 rounded-[20px] font-bold text-sm flex items-center justify-center gap-2 tap-effect hover:bg-orange-100 transition-colors">
-                        <div className="bg-white p-1.5 rounded-full shadow-sm"><Icon name="arrow-up-right" size={16} className="text-brand"/></div>
-                        Витрата
-                    </button>
-                </div>
-
-                {/* Recent Transactions List */}
-                <div>
-                    <h3 className="font-bold text-gray-800 mb-4 px-1 text-lg">Стрічка подій</h3>
-                    <div className="bg-white rounded-[24px] shadow-soft border border-slate-50 overflow-hidden">
-                        {txs.slice(0, 5).map(t => <TxRow key={t.id} t={t} />)}
-                    </div>
-                </div>
-
-                {modal && <TransactionModal type={modal} close={()=>setModal(null)} />}
-            </div>
-        );
-    };
-
-    const PnL = ({ data }) => (
-        <div className="p-6 space-y-6 pt-8 animate-slide-up">
-            <h2 className="text-2xl font-bold text-gray-900">P&L Report</h2>
-            
-            <div className="bg-white rounded-[24px] shadow-soft border border-slate-50 overflow-hidden">
-                <div className="p-6 border-b border-gray-50 bg-emerald-50/50">
-                    <div className="text-xs text-emerald-600 font-bold uppercase mb-1">Total Revenue</div>
-                    <div className="text-3xl font-bold text-emerald-700">+{data.revenue.toLocaleString()} ₴</div>
-                </div>
+            <div className="flex h-screen bg-[#F1F5F9] overflow-hidden font-sans">
                 
-                <div className="p-6 space-y-4">
-                    <div className="flex justify-between text-sm text-gray-500 font-medium">
-                        <span>(-) COGS</span>
-                        <span>{data.cogs.toLocaleString()}</span>
+                {/* SIDEBAR */}
+                <aside className="w-72 bg-white border-r border-slate-200 flex flex-col z-20 shadow-sm">
+                    <div className="p-8 flex items-center gap-3">
+                        <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-orange-200">L</div>
+                        <div>
+                            <div className="font-bold text-slate-900 text-lg leading-tight">Latiao</div>
+                            <div className="text-xs text-slate-400 font-medium uppercase tracking-wider">Finance v6.0</div>
+                        </div>
                     </div>
+
+                    <nav className="flex-1 px-4 space-y-2 mt-4">
+                        {[
+                            {id:'dashboard', icon:'layout-dashboard', label:'Дашборд'},
+                            {id:'ops', icon:'list', label:'Всі операції'},
+                            {id:'pnl', icon:'pie-chart', label:'P&L Звіт'},
+                            {id:'dividends', icon:'gem', label:'Дивіденди'},
+                            {id:'settings', icon:'settings', label:'Налаштування'}
+                        ].map(item => (
+                            <button key={item.id} onClick={()=>setView(item.id)} 
+                                className={`sidebar-link w-full flex items-center gap-4 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 ${view===item.id ? 'active' : 'text-slate-500'}`}>
+                                <Icon name={item.icon} size={20} />
+                                {item.label}
+                            </button>
+                        ))}
+                    </nav>
+
+                    <div className="p-6 border-t border-slate-100">
+                        <div className="flex items-center gap-3 mb-4 px-2">
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                            <span className="text-xs font-bold text-slate-500 uppercase">System Online</span>
+                        </div>
+                        <button onClick={()=>signOut(auth)} className="flex items-center gap-2 text-slate-400 hover:text-red-500 text-sm font-medium px-2 transition-colors">
+                            <Icon name="log-out" size={16}/> Вийти
+                        </button>
+                    </div>
+                </aside>
+
+                {/* MAIN CONTENT */}
+                <main className="flex-1 overflow-y-auto relative p-8">
                     
-                    <div className="p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
-                        <div className="flex justify-between items-center font-bold text-blue-900 text-lg">
-                            <span>Gross Profit</span>
-                            <span>{data.gross.toLocaleString()}</span>
+                    {/* TOP HEADER */}
+                    <div className="flex justify-between items-center mb-10 fade-in">
+                        <div>
+                            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                                {view === 'dashboard' && 'Огляд бізнесу'}
+                                {view === 'ops' && 'Журнал операцій'}
+                                {view === 'pnl' && 'P&L Аналітика'}
+                                {view === 'dividends' && 'Управління дивідендами'}
+                                {view === 'settings' && 'Налаштування системи'}
+                            </h1>
+                            <p className="text-slate-400 mt-1 text-sm font-medium">Вітаємо, {user?.email.split('@')[0]}</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button onClick={()=>setModalType('income')} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200 transition-all active:scale-95">
+                                <Icon name="arrow-down-left"/> Дохід
+                            </button>
+                            <button onClick={()=>setModalType('expense')} className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-orange-200 transition-all active:scale-95">
+                                <Icon name="arrow-up-right"/> Витрата
+                            </button>
                         </div>
                     </div>
 
-                    <div className="pt-2">
-                        <div className="text-xs font-bold text-gray-400 uppercase mb-2">OpEx (Витрати)</div>
-                        <div className="flex justify-between text-sm font-bold text-gray-700 mb-1">
-                            <span>Total OpEx</span>
-                            <span className="text-red-500">-{data.opex.toLocaleString()}</span>
-                        </div>
-                    </div>
+                    {/* CONTENT VIEWS */}
+                    <div className="fade-in">
+                        
+                        {/* DASHBOARD */}
+                        {view === 'dashboard' && (
+                            <div className="space-y-8">
+                                {/* KPI GRID */}
+                                <div className="grid grid-cols-4 gap-6">
+                                    <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden group">
+                                        <div className="absolute right-0 top-0 opacity-10 group-hover:scale-110 transition-transform"><Icon name="wallet" size={120}/></div>
+                                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Загальний Кеш</div>
+                                        <div className="text-3xl font-bold font-mono tracking-tight">{data.totalCash.toLocaleString()} ₴</div>
+                                        <div className="mt-4 flex gap-2">
+                                            {ACCOUNTS.map(a => (
+                                                <span key={a.id} className="text-[10px] bg-white/10 px-2 py-1 rounded border border-white/5">{a.name.split(' ')[0]}: {data.balances[a.id].toLocaleString()}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-glass group hover:border-brand-100 transition-colors">
+                                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Чистий Прибуток</div>
+                                        <div className={`text-3xl font-bold font-mono tracking-tight ${data.net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{data.net.toLocaleString()} ₴</div>
+                                        <div className="mt-2 text-xs font-bold text-slate-500 bg-slate-50 inline-block px-2 py-1 rounded">Net Margin: {data.margin}%</div>
+                                    </div>
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-glass">
+                                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Runway (Запас)</div>
+                                        <div className="text-3xl font-bold font-mono tracking-tight text-brand-500">{data.runway} днів</div>
+                                        <div className="mt-2 text-xs text-slate-400">До касового розриву</div>
+                                    </div>
+                                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-glass">
+                                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Виведено</div>
+                                        <div className="text-3xl font-bold font-mono tracking-tight text-purple-600">{data.dividends.toLocaleString()} ₴</div>
+                                        <div className="mt-2 text-xs text-slate-400">Власнику</div>
+                                    </div>
+                                </div>
 
-                    <div className="pt-4 mt-2 border-t border-dashed border-gray-200">
-                        <div className="flex justify-between items-center">
-                            <span className="text-lg font-bold text-gray-900">Net Profit</span>
-                            <span className={`text-2xl font-bold ${data.net>=0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                {data.net.toLocaleString()}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div className="text-center text-xs text-gray-400 font-medium max-w-xs mx-auto">
-                * Дивіденди вилучені з розрахунку P&L згідно стандартів управлінського обліку.
-            </div>
-        </div>
-    );
-
-    const Dividends = ({ data, txs }) => {
-        const [modal, setModal] = useState(false);
-        return (
-            <div className="p-6 space-y-6 pt-8 animate-slide-up">
-                <div className="bg-gray-900 text-white p-8 rounded-[32px] shadow-soft relative overflow-hidden">
-                     <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500 rounded-full blur-[80px] opacity-30"></div>
-                     <h2 className="text-xl font-bold mb-1 relative z-10">Дивіденди</h2>
-                     <p className="text-xs text-gray-400 mb-8 relative z-10">Profit Distribution Center</p>
-                     
-                     <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
-                         <div className="bg-white/10 backdrop-blur px-4 py-3 rounded-2xl border border-white/5">
-                             <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Available Net</div>
-                             <div className="text-lg font-bold text-emerald-400">{data.net.toLocaleString()}</div>
-                         </div>
-                         <div className="bg-white/10 backdrop-blur px-4 py-3 rounded-2xl border border-white/5">
-                             <div className="text-[10px] text-gray-400 uppercase font-bold mb-1">Withdrawn</div>
-                             <div className="text-lg font-bold text-purple-400">{data.dividends.toLocaleString()}</div>
-                         </div>
-                     </div>
-                     
-                     <button onClick={()=>setModal(true)} className="relative z-10 w-full bg-white text-gray-900 font-bold py-4 rounded-xl shadow-lg tap-effect">
-                         Виплатити
-                     </button>
-                </div>
-
-                <div className="bg-white rounded-[24px] shadow-soft border border-slate-50 p-6">
-                    <h3 className="font-bold text-gray-900 mb-4">Історія виплат</h3>
-                    {txs.filter(t=>t.isDividend).map(t => (
-                        <div key={t.id} className="flex justify-between py-3 border-b border-gray-50 last:border-0">
-                            <div>
-                                <div className="font-bold text-gray-800 text-sm">{t.description}</div>
-                                <div className="text-xs text-gray-400">{t.date}</div>
+                                {/* RECENT TABLE */}
+                                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                                    <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                                        <h3 className="font-bold text-lg text-slate-800">Останні операції</h3>
+                                        <button onClick={()=>setView('ops')} className="text-sm font-bold text-brand-500 hover:text-brand-600">Переглянути всі</button>
+                                    </div>
+                                    <table className="w-full text-left">
+                                        <thead className="bg-slate-50 text-slate-400 text-xs uppercase font-bold">
+                                            <tr>
+                                                <th className="px-6 py-4">Дата</th>
+                                                <th className="px-6 py-4">Опис</th>
+                                                <th className="px-6 py-4">Категорія</th>
+                                                <th className="px-6 py-4">Рахунок</th>
+                                                <th className="px-6 py-4 text-right">Сума</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {transactions.slice(0, 5).map(t => (
+                                                <tr key={t.id} className="table-row-hover transition-colors">
+                                                    <td className="px-6 py-4 text-sm font-mono text-slate-500">{t.date}</td>
+                                                    <td className="px-6 py-4 font-bold text-slate-800">{t.description}</td>
+                                                    <td className="px-6 py-4"><span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md font-medium">{t.cat}</span></td>
+                                                    <td className="px-6 py-4 text-sm text-slate-500">{t.source}</td>
+                                                    <td className={`px-6 py-4 text-right font-bold font-mono ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>
+                                                        {t.type==='income'?'+':'-'}{t.amount.toLocaleString()} ₴
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                            <div className="font-bold text-gray-900">-{t.amount.toLocaleString()}</div>
-                        </div>
-                    ))}
-                    {txs.filter(t=>t.isDividend).length===0 && <div className="text-center text-sm text-gray-400 py-4">Немає даних</div>}
-                </div>
-                {modal && <TransactionModal type="dividend" close={()=>setModal(false)} />}
+                        )}
+
+                        {/* P&L VIEW */}
+                        {view === 'pnl' && (
+                            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-10 max-w-4xl mx-auto">
+                                <div className="border-b pb-6 mb-6">
+                                    <div className="flex justify-between items-end">
+                                        <h2 className="text-2xl font-bold text-slate-800">Profit & Loss Statement</h2>
+                                        <div className="text-right">
+                                            <div className="text-xs text-slate-400 font-bold uppercase">Net Profit</div>
+                                            <div className={`text-3xl font-bold font-mono ${data.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                {data.net.toLocaleString()} ₴
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 font-mono text-sm">
+                                    <div className="flex justify-between py-3 px-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                                        <span className="font-bold text-emerald-800">Total Revenue</span>
+                                        <span className="font-bold text-emerald-700">+{data.revenue.toLocaleString()}</span>
+                                    </div>
+                                    <div className="flex justify-between px-4 text-slate-500">
+                                        <span>(-) COGS (Собівартість)</span>
+                                        <span>-{data.cogs.toLocaleString()}</span>
+                                    </div>
+                                    
+                                    <div className="my-4 border-t border-slate-200"></div>
+                                    
+                                    <div className="flex justify-between px-4 font-bold text-blue-900 text-lg">
+                                        <span>= Gross Profit</span>
+                                        <span>{data.gross.toLocaleString()}</span>
+                                    </div>
+
+                                    <div className="my-4 border-t border-slate-200"></div>
+
+                                    <div className="px-4">
+                                        <div className="font-bold text-slate-400 text-xs uppercase mb-3">Operating Expenses (OpEx)</div>
+                                        <div className="space-y-2 pl-4 border-l-2 border-slate-100">
+                                            {transactions.filter(t => t.type==='expense' && !t.isDividend && t.cat !== 'Закупівля (COGS)')
+                                                .reduce((acc, t) => {
+                                                    const existing = acc.find(i => i.cat === t.cat);
+                                                    if(existing) existing.val += t.amount;
+                                                    else acc.push({cat: t.cat, val: t.amount});
+                                                    return acc;
+                                                }, []).sort((a,b)=>b.val-a.val).map(item => (
+                                                <div key={item.cat} className="flex justify-between text-slate-600">
+                                                    <span>{item.cat}</span>
+                                                    <span>{item.val.toLocaleString()}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="flex justify-between mt-4 pt-2 border-t border-dashed border-slate-200 font-bold text-red-500">
+                                            <span>Total OpEx</span>
+                                            <span>-{data.opex.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="my-6 border-t-2 border-slate-900"></div>
+
+                                    <div className="flex justify-between px-4 text-xl font-bold text-slate-900">
+                                        <span>= Net Profit</span>
+                                        <span>{data.net.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* OPS TABLE (FULL) */}
+                        {view === 'ops' && (
+                            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 text-slate-400 text-xs uppercase font-bold border-b border-slate-200">
+                                        <tr>
+                                            <th className="px-6 py-4">Дата</th>
+                                            <th className="px-6 py-4">Тип</th>
+                                            <th className="px-6 py-4">Опис</th>
+                                            <th className="px-6 py-4">Категорія</th>
+                                            <th className="px-6 py-4">Рахунок</th>
+                                            <th className="px-6 py-4 text-right">Сума</th>
+                                            <th className="px-6 py-4"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {transactions.map(t => (
+                                            <tr key={t.id} className="table-row-hover transition-colors group">
+                                                <td className="px-6 py-4 text-sm font-mono text-slate-500">{t.date}</td>
+                                                <td className="px-6 py-4">
+                                                    {t.isDividend ? 
+                                                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-bold"><Icon name="gem" size={12}/> DIV</span> : 
+                                                        (t.type==='income' ? 
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs font-bold"><Icon name="arrow-down-left" size={12}/> IN</span> : 
+                                                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-100 text-orange-700 text-xs font-bold"><Icon name="arrow-up-right" size={12}/> OUT</span>
+                                                        )
+                                                    }
+                                                </td>
+                                                <td className="px-6 py-4 font-bold text-slate-800">{t.description}</td>
+                                                <td className="px-6 py-4"><span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md font-medium">{t.cat}</span></td>
+                                                <td className="px-6 py-4 text-sm text-slate-500">{t.source}</td>
+                                                <td className={`px-6 py-4 text-right font-bold font-mono ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>
+                                                    {t.type==='income'?'+':'-'}{t.amount.toLocaleString()} ₴
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <button onClick={()=>deleteTx(t.id)} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <Icon name="trash-2" size={16}/>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        {/* DIVIDENDS & SETTINGS (Similar Logic) */}
+                        {view === 'dividends' && (
+                            <div className="max-w-2xl mx-auto space-y-6">
+                                <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl flex justify-between items-center">
+                                    <div>
+                                        <h2 className="text-xl font-bold">Центр Дивідендів</h2>
+                                        <p className="text-slate-400 text-sm mt-1">Доступно з прибутку: <span className="text-emerald-400 font-bold">{data.net.toLocaleString()} ₴</span></p>
+                                    </div>
+                                    <button onClick={()=>setModalType('dividend')} className="bg-white text-slate-900 px-6 py-3 rounded-xl font-bold hover:bg-slate-200 transition-colors shadow-lg">Виплатити</button>
+                                </div>
+                                <div className="bg-white rounded-3xl border border-slate-200 p-8">
+                                    <h3 className="font-bold text-slate-800 mb-4">Історія виплат</h3>
+                                    {transactions.filter(t=>t.isDividend).map(t => (
+                                        <div key={t.id} className="flex justify-between py-3 border-b border-slate-100">
+                                            <div><div className="font-bold">{t.description}</div><div className="text-xs text-slate-400">{t.date}</div></div>
+                                            <div className="font-bold text-purple-600">-{t.amount.toLocaleString()}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        
+                        {view === 'settings' && (
+                            <div className="max-w-2xl mx-auto space-y-6">
+                                <div className="bg-white p-8 rounded-3xl border border-slate-200">
+                                    <h3 className="font-bold mb-6 text-lg">Інтеграції</h3>
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                                            <div className="flex items-center gap-3 font-bold"><div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center"><Icon name="credit-card" className="text-white" size={16}/></div> Monobank</div>
+                                            <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded">Active</span>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                                            <div className="flex items-center gap-3 font-bold"><div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white text-xs">NP</div> NovaPay</div>
+                                            <button className="text-xs font-bold text-blue-600 hover:underline">Connect</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </main>
+
+                {/* MODAL */}
+                {modalType && <TransactionModal type={modalType} close={()=>setModalType(null)} />}
             </div>
         );
     };
 
-    const Operations = ({ txs }) => (
-        <div className="p-6 pt-8 animate-slide-up">
-            <h2 className="text-2xl font-bold mb-6">Журнал операцій</h2>
-            <div className="bg-white rounded-[24px] shadow-soft border border-slate-50 overflow-hidden">
-                {txs.map(t => <TxRow key={t.id} t={t} canDelete={true} />)}
-            </div>
-        </div>
-    );
-
-    const Settings = ({ user }) => (
-        <div className="p-6 pt-8 space-y-6 animate-slide-up">
-            <h2 className="text-2xl font-bold">Налаштування</h2>
-            
-            <div className="bg-white p-6 rounded-[24px] shadow-soft border border-slate-50">
-                <div className="flex items-center gap-3 mb-6">
-                    <div className="bg-orange-100 p-2 rounded-lg text-brand"><Icon name="cpu" size={20}/></div>
-                    <div>
-                        <h3 className="font-bold text-gray-900">Automation Rules</h3>
-                        <p className="text-xs text-gray-400">Активна авто-категоризація</p>
-                    </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {SMART_RULES.map((r,i) => (
-                        <div key={i} className="text-[10px] font-bold bg-slate-50 border border-slate-100 text-slate-600 px-3 py-1.5 rounded-full">
-                            {r.k} → {r.c}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-[24px] shadow-soft border border-slate-50">
-                <h3 className="font-bold mb-4 text-sm text-gray-500 uppercase">Integrations</h3>
-                <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center"><Icon name="credit-card" size={16} className="text-white"/></div>
-                            <div>
-                                <div className="font-bold text-sm">Monobank</div>
-                                <div className="text-[10px] text-green-600 font-bold">● Connected</div>
-                            </div>
-                        </div>
-                        <div className="text-xs font-mono bg-white px-2 py-1 rounded border">•••• 8392</div>
-                    </div>
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">NP</div>
-                            <div>
-                                <div className="font-bold text-sm">NovaPay</div>
-                                <div className="text-[10px] text-gray-400">Not configured</div>
-                            </div>
-                        </div>
-                        <button className="text-xs font-bold text-brand">Connect</button>
-                    </div>
-                </div>
-            </div>
-
-            <button onClick={()=>signOut(auth)} className="w-full py-4 text-red-500 font-bold bg-white rounded-2xl shadow-sm border border-red-50 tap-effect">
-                Log Out
-            </button>
-        </div>
-    );
-
-    // --- SHARED UI ELEMENTS ---
-
-    const NavBar = ({ current, setView }) => {
-        const items = [
-            { id: 'dashboard', icon: 'layout-grid', l: 'Головна' },
-            { id: 'ops', icon: 'list', l: 'Події' },
-            { id: 'pnl', icon: 'pie-chart', l: 'P&L' },
-            { id: 'dividends', icon: 'gem', l: 'Дивіденди' },
-            { id: 'settings', icon: 'settings', l: 'Опції' },
-        ];
-        return (
-            <div className="fixed bottom-6 left-4 right-4 bg-white/90 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[24px] p-2 z-50 flex justify-between items-center">
-                {items.map(i => (
-                    <button key={i.id} onClick={()=>setView(i.id)} className={`p-3 rounded-2xl transition-all duration-300 ${current===i.id ? 'bg-brand text-white shadow-lg shadow-orange-500/30 scale-105' : 'text-gray-400 hover:text-gray-600'}`}>
-                        <Icon name={i.icon} size={22} strokeWidth={current===i.id?2.5:2} />
-                    </button>
-                ))}
-            </div>
-        );
-    };
-
-    const TxRow = ({ t, canDelete }) => {
-        const handleDelete = async () => { if(confirm('Видалити?')) await deleteDoc(doc(db, "transactions", t.id)); };
-        const icon = t.isDividend ? 'gem' : (t.type==='income' ? 'arrow-down-left' : 'arrow-up-right');
-        const colorClass = t.isDividend ? 'bg-purple-100 text-purple-600' : (t.type==='income' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-50 text-brand');
-        
-        return (
-            <div className="p-4 border-b border-gray-50 flex justify-between items-center last:border-0 hover:bg-gray-50/50 transition-colors">
-                <div className="flex gap-4 items-center">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${colorClass}`}>
-                        <Icon name={icon} size={18} />
-                    </div>
-                    <div>
-                        <div className="font-bold text-sm text-gray-800">{t.description || 'Операція'}</div>
-                        <div className="text-[10px] text-gray-400 font-medium flex gap-2 mt-0.5">
-                            <span className="bg-gray-100 px-1.5 py-0.5 rounded">{t.cat}</span>
-                            <span>{t.date}</span>
-                        </div>
-                    </div>
-                </div>
-                <div className="text-right">
-                    <div className={`font-bold text-sm ${t.type==='income'?'text-emerald-600':'text-gray-900'}`}>
-                        {t.type==='income'?'+':'-'}{t.amount.toLocaleString()}
-                    </div>
-                    {canDelete && <button onClick={handleDelete} className="text-gray-300 hover:text-red-500 mt-1"><Icon name="trash-2" size={14}/></button>}
-                </div>
-            </div>
-        );
-    };
-
+    // --- MODAL COMPONENT ---
     const TransactionModal = ({ type, close }) => {
         const [form, setForm] = useState({ amount: '', desc: '', cat: 'Інше', source: 'Monobank ФОП' });
         
@@ -524,12 +523,12 @@
         };
 
         const title = type==='dividend' ? 'Виплата дивідендів' : (type==='income' ? 'Новий дохід' : 'Нова витрата');
-        const theme = type==='dividend' ? 'bg-slate-900' : (type==='income' ? 'bg-emerald-500' : 'bg-brand');
+        const theme = type==='dividend' ? 'bg-slate-900' : (type==='income' ? 'bg-emerald-500' : 'bg-brand-500');
 
         return (
-            <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={close}></div>
-                <div className="bg-white w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl z-10 animate-slide-up">
+                <div className="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl z-10 fade-in">
                     <div className={`${theme} p-6 text-white flex justify-between items-center`}>
                         <h3 className="font-bold text-lg flex items-center gap-2">
                              <Icon name={type==='dividend'?'gem':(type==='income'?'arrow-down-left':'arrow-up-right')} size={20}/> {title}
@@ -537,43 +536,36 @@
                         <button onClick={close} className="bg-white/20 p-2 rounded-full hover:bg-white/30"><Icon name="x" size={16}/></button>
                     </div>
                     
-                    <div className="p-6 space-y-5">
+                    <div className="p-8 space-y-6">
                         <div>
-                            <label className="text-xs font-bold text-gray-400 uppercase ml-1">Сума</label>
-                            <input type="number" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="w-full text-4xl font-bold border-b border-gray-100 py-2 focus:border-brand outline-none text-gray-800 placeholder-gray-200" placeholder="0" autoFocus />
+                            <label className="text-xs font-bold text-slate-400 uppercase ml-1">Сума (UAH)</label>
+                            <input type="number" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="w-full text-5xl font-bold border-b border-slate-100 py-2 focus:border-brand-500 outline-none text-slate-800 placeholder-slate-200 font-mono" placeholder="0" autoFocus />
                         </div>
 
                         {type !== 'dividend' && (
                             <>
                                 <div className="space-y-1">
-                                    <label className="text-xs font-bold text-gray-400 uppercase ml-1">Опис</label>
-                                    <input type="text" value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className="w-full bg-gray-50 border border-gray-100 p-4 rounded-2xl text-sm outline-none focus:border-brand transition-colors" placeholder="Напр. Nova Poshta" />
+                                    <label className="text-xs font-bold text-slate-400 uppercase ml-1">Опис</label>
+                                    <input type="text" value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-4 rounded-xl text-sm outline-none focus:border-brand-500 transition-colors" placeholder="Напр. Nova Poshta" />
                                 </div>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-gray-400 uppercase ml-1">Категорія</label>
-                                        <select value={form.cat} onChange={e=>setForm({...form, cat:e.target.value})} className="w-full bg-gray-50 border border-gray-100 p-3 rounded-xl text-sm outline-none">
+                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1">Категорія</label>
+                                        <select value={form.cat} onChange={e=>setForm({...form, cat:e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-sm outline-none">
                                             {CATEGORIES[type==='income'?'income':'expense'].map(c=><option key={c} value={c}>{c}</option>)}
                                         </select>
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-xs font-bold text-gray-400 uppercase ml-1">Рахунок</label>
-                                        <select value={form.source} onChange={e=>setForm({...form, source:e.target.value})} className="w-full bg-gray-50 border border-gray-100 p-3 rounded-xl text-sm outline-none">
+                                        <label className="text-xs font-bold text-slate-400 uppercase ml-1">Рахунок</label>
+                                        <select value={form.source} onChange={e=>setForm({...form, source:e.target.value})} className="w-full bg-slate-50 border border-slate-100 p-3 rounded-xl text-sm outline-none">
                                             {ACCOUNTS.map(a=><option key={a.name} value={a.name}>{a.name}</option>)}
                                         </select>
                                     </div>
                                 </div>
                             </>
                         )}
-
-                        {type === 'dividend' && (
-                             <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl text-xs text-orange-800 leading-relaxed">
-                                 <strong>Увага:</strong> Ця операція зменшить баланс на рахунку, але не буде відображена як операційна витрата в P&L звіті.
-                             </div>
-                        )}
-
-                        <button onClick={submit} className={`w-full py-4 rounded-2xl font-bold text-white shadow-lg tap-effect mt-2 ${theme}`}>
-                            Підтвердити
+                        <button onClick={submit} className={`w-full py-4 rounded-xl font-bold text-white shadow-lg mt-2 hover:opacity-90 transition-opacity ${theme}`}>
+                            Підтвердити операцію
                         </button>
                     </div>
                 </div>
