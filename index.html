@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao Finance | Full Enterprise v12.8</title>
+    <title>Latiao Finance | Enterprise System v12.9</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -23,7 +23,8 @@
                     },
                     boxShadow: {
                         'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03)',
-                        'glow-brand': '0 0 20px -5px rgba(255, 87, 34, 0.4)'
+                        'glow-brand': '0 0 20px -5px rgba(255, 87, 34, 0.4)',
+                        'glow-emerald': '0 0 20px -5px rgba(16, 185, 129, 0.4)'
                     }
                 }
             }
@@ -75,7 +76,7 @@
 
     const { useState, useEffect, useMemo } = React;
 
-    // --- ICONS & CONSTANTS ---
+    // --- ICONS & HELPERS ---
     const Icon = ({ name, size = 18, className }) => {
         useEffect(() => { try { if(window.lucide) window.lucide.createIcons(); } catch(e){} }, [name]);
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
@@ -97,7 +98,7 @@
     ];
 
     // =================================================================================================
-    //  VIEW COMPONENTS (DEFINED OUTSIDE APP TO PREVENT CRASHES)
+    //  VIEW COMPONENTS (FULL IMPLEMENTATION)
     // =================================================================================================
 
     // 1. DASHBOARD
@@ -138,56 +139,46 @@
                         <div className={`text-2xl font-bold flex items-center gap-3 ${isHealthy ? 'text-emerald-600' : 'text-red-600'}`}>{isHealthy ? <Icon name="activity" size={32} className="animate-pulse"/> : <Icon name="skull" size={32}/>}{healthStatus}</div>
                     </div>
                 </div>
+
                 <div className="grid md:grid-cols-2 gap-6">
-                     <div>
-                         <h3 className="font-bold text-lg mb-4 text-slate-800 flex items-center gap-2"><Icon name="credit-card"/> Гаманці</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="card-modern p-5 bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col justify-between h-32 border-b-4 border-b-black">
-                                <div className="flex justify-between items-start"><div className="w-8 h-8 logo-mono grayscale opacity-80"></div><Icon name="nfc" size={20} className="text-slate-400"/></div>
-                                <div><div className="text-xs uppercase font-bold text-slate-400">Monobank ФОП</div><div className="font-mono font-bold text-lg text-slate-800">{metrics.balances.mono.toLocaleString()} ₴</div></div>
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                        <h3 className="font-bold text-lg mb-4 text-slate-800 flex items-center gap-2"><Icon name="credit-card"/> Гаманці</h3>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                <div className="flex items-center gap-3"><div className="w-8 h-8 logo-mono bg-white rounded-full shadow-sm"></div><span className="font-bold text-sm">Monobank</span></div>
+                                <span className="font-mono font-bold">{metrics.balances.mono.toLocaleString()} ₴</span>
                             </div>
-                             <div className="card-modern p-5 bg-gradient-to-br from-red-50 to-red-100 flex flex-col justify-between h-32 border-b-4 border-b-red-500">
-                                <div className="flex justify-between items-start"><div className="w-8 h-8 logo-nova"></div><Icon name="nfc" size={20} className="text-red-300"/></div>
-                                <div><div className="text-xs uppercase font-bold text-red-400">NovaPay</div><div className="font-mono font-bold text-lg text-red-900">{metrics.balances.nova.toLocaleString()} ₴</div></div>
+                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                <div className="flex items-center gap-3"><div className="w-8 h-8 logo-nova bg-white rounded-full shadow-sm"></div><span className="font-bold text-sm">NovaPay</span></div>
+                                <span className="font-mono font-bold">{metrics.balances.nova.toLocaleString()} ₴</span>
                             </div>
-                             <div className="card-modern p-5 bg-gradient-to-br from-emerald-50 to-emerald-100 flex flex-col justify-between h-32 border-b-4 border-b-emerald-500 col-span-2">
-                                <div className="flex justify-between items-start"><div className="flex items-center gap-2"><div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white shadow-lg shadow-emerald-200"><Icon name="banknote" size={16}/></div><span className="font-bold text-sm text-emerald-800">Готівкова каса</span></div></div>
-                                 <div className="text-right"><div className="font-mono font-bold text-2xl text-emerald-900">{metrics.balances.cash.toLocaleString()} ₴</div></div>
+                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                <div className="flex items-center gap-3"><div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white shadow-sm"><Icon name="banknote" size={14}/></div><span className="font-bold text-sm">Готівка</span></div>
+                                <span className="font-mono font-bold">{metrics.balances.cash.toLocaleString()} ₴</span>
                             </div>
                         </div>
-                     </div>
-                    <div className="card-modern p-6 flex flex-col justify-between bg-gradient-to-br from-white to-slate-50">
-                        <div>
-                             <h3 className="font-bold text-lg mb-6 text-slate-800 flex items-center gap-2"><Icon name="pie-chart"/> Експрес P&L</h3>
-                             <div className="space-y-6">
-                                 <div className="relative"><div className="flex justify-between text-sm font-bold text-slate-600 mb-2"><span>Доходи</span><span className="font-mono">+{metrics.revenue.toLocaleString()}</span></div><div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full shadow-glow-emerald" style={{width: '100%'}}></div></div></div>
-                                 <div className="relative"><div className="flex justify-between text-sm font-bold text-slate-600 mb-2"><span>Витрати (Все)</span><span className="font-mono">-{metrics.totalExpense.toLocaleString()}</span></div><div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-gradient-to-r from-red-400 to-red-500 rounded-full" style={{width: `${metrics.revenue ? (metrics.totalExpense/metrics.revenue)*100 : 0}%`}}></div></div></div>
-                                  <div className="relative"><div className="flex justify-between text-sm font-bold text-slate-600 mb-2"><span>Чистий Прибуток</span><span className={`font-mono ${metrics.net>=0?'text-blue-600':'text-red-600'}`}>{metrics.net.toLocaleString()}</span></div><div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" style={{width: `${metrics.revenue ? (metrics.net/metrics.revenue)*100 : 0}%`}}></div></div></div>
-                             </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between">
+                        <h3 className="font-bold text-lg mb-4 text-slate-800 flex items-center gap-2"><Icon name="pie-chart"/> Експрес P&L</h3>
+                        <div className="space-y-4">
+                            <div><div className="flex justify-between text-xs font-bold text-slate-500 mb-1"><span>Доходи</span><span>{metrics.revenue.toLocaleString()}</span></div><div className="w-full h-2 bg-slate-100 rounded-full"><div className="h-full bg-emerald-500 rounded-full" style={{width: '100%'}}></div></div></div>
+                            <div><div className="flex justify-between text-xs font-bold text-slate-500 mb-1"><span>Витрати</span><span>{metrics.totalExpense.toLocaleString()}</span></div><div className="w-full h-2 bg-slate-100 rounded-full"><div className="h-full bg-red-500 rounded-full" style={{width: metrics.revenue ? `${(metrics.totalExpense/metrics.revenue)*100}%` : '0%'}}></div></div></div>
+                            <div><div className="flex justify-between text-xs font-bold text-slate-500 mb-1"><span>Прибуток</span><span>{metrics.net.toLocaleString()}</span></div><div className="w-full h-2 bg-slate-100 rounded-full"><div className="h-full bg-blue-500 rounded-full" style={{width: metrics.revenue ? `${(metrics.net/metrics.revenue)*100}%` : '0%'}}></div></div></div>
                         </div>
-                        <button onClick={()=>setView('pnl')} className="w-full mt-6 py-3 text-sm font-bold text-blue-700 bg-blue-50 rounded-xl hover:bg-blue-100 transition flex items-center justify-center gap-2 group">Детальний звіт <Icon name="arrow-right" size={16} className="group-hover:translate-x-1 transition-transform"/></button>
+                        <button onClick={()=>setView('pnl')} className="w-full mt-4 py-2 text-xs font-bold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition">Детальний звіт →</button>
                     </div>
                 </div>
-                <div className="card-modern overflow-hidden">
-                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                        <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2"><Icon name="history"/> Останні операції</h3>
-                    </div>
-                    {transactions.length === 0 ? <div className="text-slate-400 text-center p-8 font-medium">Операцій ще немає</div> : 
-                    <div className="overflow-x-auto p-2">
-                        <table className="w-full text-left border-collapse">
-                            <tbody className="divide-y divide-slate-100">
-                                {transactions.slice(0, 5).map(t => (
-                                    <tr key={t.id} className="table-row-modern">
-                                        <td className="p-4"><div className="font-bold text-slate-700">{t.description}</div><div className="text-xs text-slate-400 font-medium mt-1 flex items-center gap-1"><Icon name="calendar" size={12}/> {t.date}</div></td>
-                                        <td className="p-4 text-right">
-                                            <span className={`font-mono font-bold text-lg ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>{t.type==='income'?'+':'-'}{(Number(t.amount)||0).toLocaleString()} ₴</span>
-                                            <div className="text-xs text-slate-400 mt-1 font-medium">{t.source}</div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>}
+
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6">
+                    <h3 className="font-bold text-lg text-slate-800 mb-4 flex items-center gap-2"><Icon name="history"/> Останні операції</h3>
+                    {transactions.length === 0 ? <div className="text-slate-400 text-center text-sm">Немає операцій</div> : 
+                    transactions.slice(0, 5).map(t => (
+                        <div key={t.id} className="flex justify-between py-3 border-b border-slate-100 last:border-0">
+                            <div><div className="font-bold text-sm">{t.description}</div><div className="text-xs text-slate-400">{t.date}</div></div>
+                            <div className={`font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>{t.type==='income'?'+':'-'}{(Number(t.amount)||0).toLocaleString()} ₴</div>
+                        </div>
+                    ))}
                 </div>
             </div>
         );
@@ -354,7 +345,7 @@
         );
     };
 
-    // 6. MANAGERS VIEW (New Feature)
+    // 6. MANAGERS VIEW (SAFE & FULL)
     const ManagersView = ({ db }) => {
         const [managers, setManagers] = useState([]);
         const [showModal, setShowModal] = useState(false);
@@ -392,21 +383,11 @@
     const ManagerModal = ({ db, close, initialData }) => {
         const [form, setForm] = useState({ name: initialData?.name||'', email: initialData?.email||'', password: initialData?.password||'', permissions: initialData?.permissions||['dashboard','ops'] });
         const isEdit = !!initialData;
-        
-        // FIX: Safe permission toggling
-        const togglePerm = (p) => {
-            setForm(prev => {
-                const currentPerms = prev.permissions || [];
-                const newPerms = currentPerms.includes(p) ? currentPerms.filter(x => x !== p) : [...currentPerms, p];
-                return { ...prev, permissions: newPerms };
-            });
-        };
-
+        const togglePerm = (p) => setForm(prev => ({...prev, permissions: (prev.permissions||[]).includes(p) ? prev.permissions.filter(x => x !== p) : [...(prev.permissions||[]), p]}));
         const submit = async () => {
             if(!form.name || !form.email || !form.password) return alert("Заповніть всі поля");
             try { if(isEdit) await updateDoc(doc(db, "managers", initialData.id), form); else await addDoc(collection(db, "managers"), form); close(); } catch(e) { alert("Помилка: " + e.message); }
         };
-
         const VIEWS_TO_SELECT = ALL_VIEWS.filter(v => v.id !== 'settings' && v.id !== 'managers');
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={close}></div><div className="card-modern w-full max-w-lg p-8 shadow-2xl animate-fade-in relative z-10"><div className="flex justify-between items-center mb-6"><h3 className="font-bold text-2xl text-slate-800 flex items-center gap-3"><div className="bg-brand-100 p-2 rounded-xl text-brand-600"><Icon name={isEdit ? "pencil" : "user-plus"} size={24}/></div> {isEdit ? "Редагування" : "Новий менеджер"}</h3><button onClick={close} className="bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition"><Icon name="x" size={20} className="text-slate-500"/></button></div><div className="space-y-5"><div className="space-y-4"><div className="relative"><Icon name="user" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/><input placeholder="Ім'я співробітника" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="w-full border border-slate-200 bg-slate-50 pl-12 pr-4 py-3 rounded-xl text-sm outline-none focus:border-brand-500 focus:bg-white transition font-medium"/></div><div className="relative"><Icon name="mail" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/><input placeholder="Email (Логін для входу)" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} className="w-full border border-slate-200 bg-slate-50 pl-12 pr-4 py-3 rounded-xl text-sm outline-none focus:border-brand-500 focus:bg-white transition font-medium"/></div><div className="relative"><Icon name="key" size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"/><input placeholder="Пароль" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} className="w-full border border-slate-200 bg-slate-50 pl-12 pr-4 py-3 rounded-xl text-sm outline-none focus:border-brand-500 focus:bg-white transition font-medium"/></div></div><div className="pt-4 border-t border-slate-100"><label className="text-xs font-bold uppercase text-slate-500 mb-4 block flex items-center gap-2"><Icon name="lock" size={14}/> Надати доступ до розділів:</label><div className="grid grid-cols-2 gap-3">{VIEWS_TO_SELECT.map(v => (<label key={v.id} className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${(form.permissions||[]).includes(v.id) ? 'bg-brand-50 border-brand-500 shadow-sm' : 'bg-white border-slate-200 hover:bg-slate-50'}`}><div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${(form.permissions||[]).includes(v.id) ? 'border-brand-500 bg-brand-500 text-white' : 'border-slate-300'}`}>{(form.permissions||[]).includes(v.id) && <Icon name="check" size={14} strokeWidth={3}/>}</div><input type="checkbox" className="hidden" checked={(form.permissions||[]).includes(v.id)} onChange={()=>togglePerm(v.id)} /><span className={`text-sm font-bold flex items-center gap-2 ${(form.permissions||[]).includes(v.id) ? 'text-brand-700' : 'text-slate-600'}`}><Icon name={v.icon} size={16} className="opacity-70"/> {v.label}</span></label>))}</div></div><div className="flex gap-4 pt-4"><button onClick={close} className="flex-1 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition">Скасувати</button><button onClick={submit} className="flex-1 bg-brand-500 text-white py-3 rounded-xl font-bold hover:bg-brand-600 transition shadow-lg active:scale-95 flex items-center justify-center gap-2"><Icon name="check-circle" size={18}/> {isEdit ? "Зберегти" : "Створити"}</button></div></div></div></div>
@@ -446,6 +427,299 @@
         const config = { income: { title: 'Новий Дохід', icon: 'arrow-down-left', theme: 'from-emerald-500 to-teal-600', bg: 'bg-emerald-50', border: 'focus:border-emerald-500' }, expense: { title: 'Нова Витрата', icon: 'arrow-up-right', theme: 'from-brand-500 to-orange-600', bg: 'bg-brand-50', border: 'focus:border-brand-500' }, dividend: { title: 'Виплата Дивідендів', icon: 'gem', theme: 'from-indigo-500 to-purple-600', bg: 'bg-indigo-50', border: 'focus:border-indigo-500' } }[type];
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4"><div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={close}></div><div className="card-modern w-full max-w-lg overflow-hidden shadow-2xl relative z-10 animate-fade-in"><div className={`bg-gradient-to-r ${config.theme} p-6 text-white flex justify-between items-center relative overflow-hidden`}><div className="absolute right-[-20px] top-[-20px] opacity-20 rotate-12"><Icon name={config.icon} size={100}/></div><h3 className="font-bold text-xl flex items-center gap-3 relative z-10"><Icon name={config.icon} size={24}/> {config.title}</h3><button onClick={close} className="bg-white/20 p-2 rounded-full hover:bg-white/30 transition relative z-10"><Icon name="x" size={20}/></button></div><div className="p-8 space-y-6"><div><label className="text-xs font-bold text-slate-400 uppercase ml-1 mb-2 block">Сума операції (UAH)</label><div className="relative"><input type="number" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className={`w-full text-5xl font-mono font-bold border-b-2 border-slate-100 py-2 ${config.border} outline-none text-slate-800 placeholder-slate-200 transition-colors bg-transparent pl-8`} placeholder="0" autoFocus /><span className="absolute left-0 bottom-4 text-3xl text-slate-300">₴</span></div></div>{type === 'dividend' ? (<div className={`${config.bg} p-5 rounded-2xl border border-slate-100/50`}><label className="text-xs font-bold text-slate-500 uppercase ml-1 flex items-center gap-2 mb-3"><Icon name="wallet" size={14}/> Звідки вивести кошти?</label><select value={form.source} onChange={e=>setForm({...form, source:e.target.value})} className="w-full bg-white border border-slate-200 p-3 rounded-xl text-sm outline-none font-medium shadow-sm cursor-pointer hover:border-slate-300 transition focus:border-indigo-500">{['Monobank ФОП', 'NovaPay', 'Готівка'].map(a=><option key={a} value={a}>{a}</option>)}</select><p className="text-xs text-slate-400 mt-3 flex items-start gap-1"><Icon name="info" size={12} className="mt-0.5"/> Ця дія фіксує виведення прибутку в системі. Реальний переказ робіть через банк.</p></div>) : (<div className="space-y-4"><div className="space-y-1.5 relative"><label className="text-xs font-bold text-slate-400 uppercase ml-1 flex items-center gap-2"><Icon name="pen-line" size={14}/> Опис</label><input type="text" value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className={`w-full bg-slate-50 border border-slate-200 p-4 rounded-xl text-sm outline-none ${config.border} transition-all font-medium shadow-sm focus:bg-white focus:shadow-md`} placeholder="Напр. Оплата від клієнта..." /></div><div className="grid grid-cols-2 gap-4"><div className="space-y-1.5"><label className="text-xs font-bold text-slate-400 uppercase ml-1 flex items-center gap-2"><Icon name="tag" size={14}/> Категорія</label><select value={form.cat} onChange={e=>setForm({...form, cat:e.target.value})} className={`w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none ${config.border} transition-all font-medium shadow-sm cursor-pointer hover:bg-slate-100`}>{cats.map(c=><option key={c} value={c}>{c}</option>)}</select></div><div className="space-y-1.5"><label className="text-xs font-bold text-slate-400 uppercase ml-1 flex items-center gap-2"><Icon name="wallet" size={14}/> Рахунок</label><select value={form.source} onChange={e=>setForm({...form, source:e.target.value})} className={`w-full bg-slate-50 border border-slate-200 p-3 rounded-xl text-sm outline-none ${config.border} transition-all font-medium shadow-sm cursor-pointer hover:bg-slate-100`}>{['Monobank ФОП', 'NovaPay', 'Готівка'].map(a=><option key={a} value={a}>{a}</option>)}</select></div></div></div>)}<button onClick={submit} className={`w-full py-4 rounded-xl font-bold text-white shadow-lg mt-4 hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 bg-gradient-to-r ${config.theme}`}><Icon name="check-circle" size={20}/> Підтвердити операцію</button></div></div></div>
+        );
+    };
+
+    // --- MAIN APP CONTROLLER ---
+
+    const App = () => {
+        const [currentUser, setCurrentUser] = useState(null); 
+        const [view, setView] = useState('auth');
+        const [transactions, setTransactions] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [statusMsg, setStatusMsg] = useState('');
+        
+        const [settings, setSettings] = useState({ monoKey: '', novaKey: '', monoAccountId: '' });
+        const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+
+        const [email, setEmail] = useState('');
+        const [pass, setPass] = useState('');
+        const [modalType, setModalType] = useState(null);
+
+        // --- AUTH & DATA LOADING ---
+        useEffect(() => {
+            const unsub = onAuthStateChanged(auth, async (u) => {
+                if (u) {
+                    // Admin Logged In
+                    setCurrentUser({ uid: u.uid, email: u.email, role: 'admin', permissions: ['all'] });
+                    setView('dashboard');
+                    loadData();
+                } else {
+                    // Check for Manager in LocalStorage
+                    try {
+                        const storedManager = localStorage.getItem('latiao_manager');
+                        if (storedManager) {
+                            const managerData = JSON.parse(storedManager);
+                            setCurrentUser(managerData);
+                            setView('dashboard');
+                            loadData();
+                        } else {
+                            setCurrentUser(null);
+                            setView('auth');
+                            setLoading(false);
+                        }
+                    } catch (e) {
+                        console.error("Storage error", e);
+                        localStorage.removeItem('latiao_manager');
+                        setView('auth');
+                        setLoading(false);
+                    }
+                }
+            });
+            return () => unsub();
+        }, []);
+
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const sSnap = await getDoc(doc(db, "settings", "global"));
+                if (sSnap.exists()) setSettings(sSnap.data());
+                
+                const cSnap = await getDoc(doc(db, "settings", "categories"));
+                if (cSnap.exists()) setCategories(cSnap.data());
+                else await setDoc(doc(db, "settings", "categories"), DEFAULT_CATEGORIES);
+
+                const q = query(collection(db, "transactions"));
+                onSnapshot(q, (snap) => {
+                    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    list.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    setTransactions(list);
+                    setLoading(false);
+                });
+            } catch (e) {
+                console.error(e);
+                setLoading(false);
+            }
+        };
+
+        const metrics = useMemo(() => {
+            const income = transactions.filter(t => t.type === 'income' && !t.isDividend);
+            const expense = transactions.filter(t => t.type === 'expense' && !t.isDividend);
+            const revenue = income.reduce((s,t) => s + (Number(t.amount)||0), 0);
+            const cogs = expense.filter(t => t.cat === 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0);
+            const opex = expense.filter(t => t.cat !== 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0);
+            const totalExpense = cogs + opex;
+            const totalCash = transactions.reduce((s,t) => t.type==='income' ? s+(Number(t.amount)||0) : s-(Number(t.amount)||0), 0);
+            const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s+(Number(t.amount)||0), 0);
+            const net = revenue - totalExpense;
+            
+            const operationalCashFlow = revenue - totalExpense; 
+            const financingCashFlow = -dividends; 
+            const netCashChange = operationalCashFlow + financingCashFlow;
+
+            const balances = { mono: 0, nova: 0, cash: 0 };
+            transactions.forEach(t => {
+                const src = t.source || '';
+                const key = src.includes('Monobank') ? 'mono' : (src.includes('Nova') ? 'nova' : 'cash');
+                if(balances[key] !== undefined) balances[key] += (t.type==='income' ? (Number(t.amount)||0) : -(Number(t.amount)||0));
+            });
+
+            const dailyBurn = totalExpense > 0 ? totalExpense / 30 : 0; 
+            const runway = dailyBurn > 0 ? (totalCash / dailyBurn).toFixed(0) : "∞";
+
+            return { 
+                revenue, cogs, opex, net, totalCash, dividends, balances, 
+                margin: revenue ? ((net/revenue)*100).toFixed(0) : 0,
+                operationalCashFlow, financingCashFlow, netCashChange, totalExpense,
+                runway
+            };
+        }, [transactions]);
+
+        const handleLogin = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            try {
+                // Try Admin
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch (err) {
+                // Try Manager
+                try {
+                    const q = query(collection(db, "managers"), where("email", "==", email), where("password", "==", pass));
+                    const snapshot = await getDocs(q);
+                    if (!snapshot.empty) {
+                        const managerDoc = snapshot.docs[0].data();
+                        const managerUser = { 
+                            uid: snapshot.docs[0].id, 
+                            email: managerDoc.email, 
+                            name: managerDoc.name,
+                            role: 'manager', 
+                            permissions: managerDoc.permissions || [] 
+                        };
+                        localStorage.setItem('latiao_manager', JSON.stringify(managerUser));
+                        setCurrentUser(managerUser);
+                        setView('dashboard');
+                        loadData();
+                    } else {
+                        alert('Невірний логін або пароль');
+                        setLoading(false);
+                    }
+                } catch (dbErr) {
+                    alert('Помилка входу: ' + dbErr.message);
+                    setLoading(false);
+                }
+            }
+        };
+
+        const handleLogout = () => {
+            signOut(auth);
+            localStorage.removeItem('latiao_manager');
+            setCurrentUser(null);
+            setView('auth');
+        };
+
+        const canAccess = (viewId) => {
+            if (!currentUser) return false;
+            if (currentUser.role === 'admin') return true;
+            if (!currentUser.permissions) return false;
+            return currentUser.permissions.includes(viewId);
+        };
+
+        const deleteTx = async (id) => { if(confirm('Видалити?')) await deleteDoc(doc(db, "transactions", id)); };
+        const saveSettings = async (d) => { await setDoc(doc(db, "settings", "global"), d); setSettings(d); alert('Збережено!'); };
+        const saveCategories = async (d) => { await setDoc(doc(db, "settings", "categories"), d); setCategories(d); };
+        
+        const syncMono = async () => {
+             if (!settings.monoKey || !settings.monoAccountId) return alert("Перевірте налаштування Monobank.");
+             setStatusMsg(`⏳ Синхронізація...`);
+             try {
+                const now = Math.floor(Date.now()/1000); const monthAgo = now - 2678400;
+                const res = await fetch(`https://corsproxy.io/?https://api.monobank.ua/personal/statement/${settings.monoAccountId}/${monthAgo}/${now}`, { headers: { 'X-Token': settings.monoKey } });
+                const data = await res.json();
+                if (!Array.isArray(data)) throw new Error("Помилка API");
+                const batch = writeBatch(db); let count=0;
+                const existingIds = new Set(transactions.map(t => t.bankId));
+                for(const item of data){
+                    if(existingIds.has(item.id)) continue;
+                    let cat = 'Інше';
+                    const desc = (item.description||'').toLowerCase();
+                    if(desc.includes('nova')) cat='Логістика'; 
+                    else if(desc.includes('atb')||desc.includes('silpo')) cat='Закупівля (COGS)';
+                    const catList = item.amount>0 ? categories.income : categories.expense;
+                    if(!catList.includes(cat) && cat!=='Логістика' && cat!=='Закупівля (COGS)') cat='Інше';
+
+                    batch.set(doc(collection(db,"transactions")), {
+                        amount: Math.abs(item.amount/100), description: item.description, cat, source: 'Monobank ФОП',
+                        type: item.amount>0?'income':'expense', isDividend: false, date: new Date(item.time*1000).toLocaleDateString('uk-UA'), createdAt: item.time*1000, bankId: item.id
+                    });
+                    count++;
+                }
+                if(count>0) await batch.commit();
+                setStatusMsg(count>0 ? `🚀 Додано: ${count}` : "👌 Нових немає");
+                setTimeout(()=>setStatusMsg(''), 3000);
+             } catch(e) { setStatusMsg("❌ Помилка"); alert(e.message); }
+        };
+
+        const deleteAllTransactions = async () => {
+            if(!confirm("Видалити ВСЕ?")) return;
+            const s = await getDocs(query(collection(db,"transactions"), limit(500)));
+            const b = writeBatch(db); s.docs.forEach(d=>b.delete(d.ref)); await b.commit();
+            alert("Очищено.");
+        };
+
+        // --- MAIN RENDER ---
+        if (view === 'auth') return (
+            <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black flex items-center justify-center p-4 relative overflow-hidden">
+                <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-brand-500/20 rounded-full blur-[120px] animate-pulse"></div>
+                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px]"></div>
+                
+                <div className="bg-white/5 backdrop-blur-xl p-10 rounded-[32px] w-full max-w-sm text-center border border-white/10 shadow-2xl relative z-10">
+                    <div className="mb-8 flex flex-col items-center">
+                        <div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/30 mb-4 transform rotate-3 relative">
+                             <Icon name="flame" size={40} className="text-white absolute -top-1 -right-1 opacity-80"/>
+                            <span className="text-4xl font-extrabold text-white">L</span>
+                        </div>
+                        <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">Latiao <span className="text-brand-500">Фінанси</span></h1>
+                        <p className="text-slate-400 text-sm mt-2 font-medium">Корпоративна система обліку</p>
+                    </div>
+                    <form onSubmit={handleLogin} className="space-y-4">
+                        <div className="relative"><Icon name="mail" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="email" placeholder="Email або Логін" value={email} onChange={e=>setEmail(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div>
+                        <div className="relative"><Icon name="lock" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="password" placeholder="Пароль" value={pass} onChange={e=>setPass(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div>
+                        <button type="submit" className="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white py-4 rounded-2xl font-bold transition shadow-lg shadow-brand-500/20 active:scale-[0.98] mt-2 flex items-center justify-center gap-2">
+                            {loading ? <Icon name="loader" className="animate-spin"/> : <Icon name="log-in"/>} Увійти в систему
+                        </button>
+                    </form>
+                    <button onClick={()=> { localStorage.removeItem('latiao_manager'); window.location.reload(); }} className="text-xs text-slate-500 mt-6 hover:text-white transition underline cursor-pointer">Скинути сесію</button>
+                </div>
+            </div>
+        );
+
+        if (!currentUser && view !== 'auth') return null; // Safe render
+
+        return (
+            <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
+                {/* Sidebar */}
+                <aside className="w-72 bg-white border-r border-slate-200/70 flex flex-col z-20 shadow-soft relative">
+                    <div className="p-8 pb-4 relative">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20 transform -rotate-3 relative overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+                                <Icon name="flame" size={24} className="text-white relative z-10"/>
+                            </div>
+                             <div className="leading-none">
+                                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex flex-col">
+                                    <span>Latiao</span>
+                                    <span className="text-brand-600 text-sm font-bold">Фінанси</span>
+                                </h1>
+                            </div>
+                        </div>
+                    </div>
+                    <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto py-4">
+                        <div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider">Основне</div>
+                        {ALL_VIEWS.filter(v => canAccess(v.id) && v.id !== 'settings' && v.id !== 'managers').map(item => (
+                            <button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view===item.id ? 'active' : 'text-slate-500 hover:bg-brand-50 hover:text-brand-600'}`}>
+                                <Icon name={item.icon} size={20} className={`transition-transform group-hover:scale-110 ${view===item.id ? '' : 'opacity-70 group-hover:opacity-100'}`}/> <span className="capitalize">{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-1.5 pb-8">
+                         <div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider">Адміністрування</div>
+                        {canAccess('managers') && <button onClick={()=>setView('managers')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='managers'?'active':'text-slate-500 hover:bg-brand-50 hover:text-brand-600'}`}><Icon name="users-round" size={20} className={`transition-transform group-hover:scale-110 ${view==='managers'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Команда</span></button>}
+                        {canAccess('settings') && <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='settings'?'active':'text-slate-500 hover:bg-brand-50 hover:text-brand-600'}`}><Icon name="sliders-horizontal" size={20} className={`transition-transform group-hover:scale-110 ${view==='settings'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Налаштування</span></button>}
+                        <button onClick={handleLogout} className="w-full flex items-center gap-3 p-3.5 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all sidebar-link mt-4 group"><Icon name="log-out" size={20} className="opacity-70 group-hover:opacity-100 transition-transform group-hover:translate-x-1"/> Вихід з системи</button>
+                    </div>
+                </aside>
+
+                <main className="flex-1 overflow-y-auto p-8 relative scroll-smooth">
+                    {/* Top Bar */}
+                    <div className="flex justify-between items-center mb-8 fade-in sticky top-0 z-30 py-4 -mt-4 bg-transparent backdrop-blur-md">
+                        <div>
+                            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight capitalize drop-shadow-sm">{ALL_VIEWS.find(v=>v.id===view)?.label}</h1>
+                            <p className="text-slate-500 font-medium mt-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> {currentUser?.email} | {currentUser?.role === 'admin' ? 'Власник' : 'Менеджер'}</p>
+                        </div>
+                        {(view==='dashboard'||view==='ops') && 
+                        <div className="flex gap-4 shadow-soft p-1.5 bg-white rounded-2xl border border-slate-100">
+                            <button onClick={()=>setModalType('income')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="arrow-down-left" size={20}/> Дохід</button>
+                            <button onClick={()=>setModalType('expense')} className="bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-brand-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="arrow-up-right" size={20}/> Витрата</button>
+                        </div>}
+                    </div>
+                    
+                    {statusMsg && <div className="fixed top-6 right-6 bg-slate-900/90 backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3 animate-bounce border border-slate-700/50 font-medium"><Icon name="loader" className="animate-spin text-brand-500"/> {statusMsg}</div>}
+                    
+                    <div className="fade-in pb-16 relative z-10">
+                        {loading && <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50 backdrop-blur-sm z-20 rounded-3xl"><div className="flex flex-col items-center gap-3 text-brand-500 font-bold animate-pulse"><Icon name="loader" size={40} className="animate-spin"/>Завантаження даних...</div></div>}
+                        <div className={loading ? 'opacity-50 pointer-events-none filter blur-sm transition-all duration-500' : 'transition-all duration-500'}>
+                            {view==='dashboard' && <DashboardView metrics={metrics} transactions={transactions} setView={setView}/>}
+                            {view==='pnl' && <PnLView metrics={metrics} transactions={transactions}/>}
+                            {view==='cashflow' && <CashFlowView metrics={metrics}/>}
+                            {view==='dividends' && <DividendsView metrics={metrics} transactions={transactions} setModalType={setModalType}/>}
+                            {view==='ops' && <OpsView transactions={transactions} deleteTx={deleteTx} syncMono={syncM} canDelete={currentUser?.role==='admin'} categories={categories}/>}
+                            {view==='settings' && <SettingsView settings={settings} setSettings={setSettings} saveSettings={saveS} syncMono={syncM} deleteAllTransactions={delAll} categories={categories} saveCategories={saveC}/>}
+                            {view==='managers' && <ManagersView db={db}/>}
+                        </div>
+                    </div>
+                </main>
+                {modalType && <TransactionModal type={modalType} close={()=>setModalType(null)} categories={categories}/>}
+            </div>
         );
     };
 
