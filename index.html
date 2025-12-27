@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao Finance | Team Stable v12.2</title>
+    <title>Latiao Finance | v12.3 Fixed Architecture</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -30,13 +30,8 @@
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Logos */
         .logo-mono { background-image: url('https://multicast.com.ua/wp-content/uploads/2024/04/monobank-logo.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
         .logo-nova { background-image: url('https://novapay.ua/wp-content/themes/novapay/assets/img/logo.svg'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-        
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
     </style>
 </head>
 <body>
@@ -61,317 +56,17 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     
-    // Safety check for persistence
-    try {
-        setPersistence(auth, browserLocalPersistence).catch(console.error);
-    } catch(e) { console.error("Persistence error", e); }
+    try { setPersistence(auth, browserLocalPersistence).catch(console.error); } catch(e) {}
 
     const { useState, useEffect, useMemo } = React;
 
+    // --- COMPONENTS DEFINED FIRST ---
+
     const Icon = ({ name, size = 18, className }) => {
-        useEffect(() => { 
-            try { 
-                if (window.lucide) window.lucide.createIcons(); 
-            } catch(e){} 
-        }, [name]);
+        useEffect(() => { try { if(window.lucide) window.lucide.createIcons(); } catch(e){} }, [name]);
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
     };
 
-    const DEFAULT_CATEGORIES = {
-        income: ['Продажі', 'Кешбек', 'Повернення', 'Інше'],
-        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Знижки', 'Інше']
-    };
-
-    const ALL_VIEWS = [
-        {id:'dashboard', label:'Огляд', icon:'layout-dashboard'},
-        {id:'ops', label:'Операції', icon:'list'},
-        {id:'pnl', label:'P&L Звіт', icon:'pie-chart'},
-        {id:'cashflow', label:'Cash Flow', icon:'banknote'},
-        {id:'dividends', label:'Дивіденди', icon:'gem'},
-        {id:'settings', label:'Налаштування', icon:'settings'},
-        {id:'managers', label:'Команда', icon:'users'} 
-    ];
-
-    const App = () => {
-        const [currentUser, setCurrentUser] = useState(null); 
-        const [view, setView] = useState('auth');
-        const [transactions, setTransactions] = useState([]);
-        const [loading, setLoading] = useState(true);
-        const [statusMsg, setStatusMsg] = useState('');
-        
-        const [settings, setSettings] = useState({ monoKey: '', novaKey: '', monoAccountId: '' });
-        const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
-
-        const [email, setEmail] = useState('');
-        const [pass, setPass] = useState('');
-        const [modalType, setModalType] = useState(null);
-
-        // --- AUTH & DATA LOADING ---
-        useEffect(() => {
-            const unsub = onAuthStateChanged(auth, async (u) => {
-                if (u) {
-                    // Admin Logged In
-                    setCurrentUser({ uid: u.uid, email: u.email, role: 'admin', permissions: ['all'] });
-                    setView('dashboard');
-                    loadData();
-                } else {
-                    // Check for Manager in LocalStorage
-                    try {
-                        const storedManager = localStorage.getItem('latiao_manager');
-                        if (storedManager) {
-                            const managerData = JSON.parse(storedManager);
-                            setCurrentUser(managerData);
-                            setView('dashboard');
-                            loadData();
-                        } else {
-                            setCurrentUser(null);
-                            setView('auth');
-                            setLoading(false);
-                        }
-                    } catch (e) {
-                        console.error("Storage error", e);
-                        localStorage.removeItem('latiao_manager');
-                        setView('auth');
-                        setLoading(false);
-                    }
-                }
-            });
-            return () => unsub();
-        }, []);
-
-        const loadData = async () => {
-            setLoading(true);
-            try {
-                const sSnap = await getDoc(doc(db, "settings", "global"));
-                if (sSnap.exists()) setSettings(sSnap.data());
-                
-                const cSnap = await getDoc(doc(db, "settings", "categories"));
-                if (cSnap.exists()) setCategories(cSnap.data());
-                else await setDoc(doc(db, "settings", "categories"), DEFAULT_CATEGORIES);
-
-                const q = query(collection(db, "transactions"));
-                onSnapshot(q, (snap) => {
-                    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                    list.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
-                    setTransactions(list);
-                    setLoading(false);
-                });
-            } catch (e) {
-                console.error(e);
-                setLoading(false);
-            }
-        };
-
-        const metrics = useMemo(() => {
-            const income = transactions.filter(t => t.type === 'income' && !t.isDividend);
-            const expense = transactions.filter(t => t.type === 'expense' && !t.isDividend);
-            const revenue = income.reduce((s,t) => s + (Number(t.amount)||0), 0);
-            const cogs = expense.filter(t => t.cat === 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0);
-            const opex = expense.filter(t => t.cat !== 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0);
-            const totalExpense = cogs + opex;
-            const totalCash = transactions.reduce((s,t) => t.type==='income' ? s+(Number(t.amount)||0) : s-(Number(t.amount)||0), 0);
-            const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s+(Number(t.amount)||0), 0);
-            const net = revenue - totalExpense;
-            
-            const operationalCashFlow = revenue - totalExpense; 
-            const financingCashFlow = -dividends; 
-            const netCashChange = operationalCashFlow + financingCashFlow;
-
-            const balances = { mono: 0, nova: 0, cash: 0 };
-            transactions.forEach(t => {
-                const src = t.source || '';
-                const key = src.includes('Monobank') ? 'mono' : (src.includes('Nova') ? 'nova' : 'cash');
-                if(balances[key] !== undefined) balances[key] += (t.type==='income' ? (Number(t.amount)||0) : -(Number(t.amount)||0));
-            });
-            const dailyBurn = totalExpense > 0 ? totalExpense / 30 : 0;
-            const runway = dailyBurn > 0 ? (totalCash / dailyBurn).toFixed(0) : "∞";
-            
-            return { revenue, cogs, opex, net, totalCash, dividends, balances, margin: revenue ? ((net/revenue)*100).toFixed(0) : 0, totalExpense, runway, operationalCashFlow, financingCashFlow, netCashChange };
-        }, [transactions]);
-
-        // --- AUTH ---
-        const handleLogin = async (e) => {
-            e.preventDefault();
-            setLoading(true);
-            try {
-                // Try Admin
-                await signInWithEmailAndPassword(auth, email, pass);
-            } catch (err) {
-                // Try Manager
-                try {
-                    const q = query(collection(db, "managers"), where("email", "==", email), where("password", "==", pass));
-                    const snapshot = await getDocs(q);
-                    if (!snapshot.empty) {
-                        const managerDoc = snapshot.docs[0].data();
-                        const managerUser = { 
-                            uid: snapshot.docs[0].id, 
-                            email: managerDoc.email, 
-                            name: managerDoc.name,
-                            role: 'manager', 
-                            permissions: managerDoc.permissions || [] 
-                        };
-                        localStorage.setItem('latiao_manager', JSON.stringify(managerUser));
-                        setCurrentUser(managerUser);
-                        setView('dashboard');
-                        loadData();
-                    } else {
-                        alert('Невірний логін або пароль');
-                        setLoading(false);
-                    }
-                } catch (dbErr) {
-                    alert('Помилка входу: ' + dbErr.message);
-                    setLoading(false);
-                }
-            }
-        };
-
-        const handleLogout = () => {
-            signOut(auth);
-            localStorage.removeItem('latiao_manager');
-            setCurrentUser(null);
-            setView('auth');
-        };
-
-        const canAccess = (viewId) => {
-            if (!currentUser) return false;
-            if (currentUser.role === 'admin') return true;
-            if (!currentUser.permissions) return false;
-            return currentUser.permissions.includes(viewId);
-        };
-
-        // --- ACTIONS ---
-        const deleteTx = async (id) => { if(confirm('Видалити?')) await deleteDoc(doc(db, "transactions", id)); };
-        const saveSettings = async (d) => { await setDoc(doc(db, "settings", "global"), d); setSettings(d); alert('Збережено!'); };
-        const saveCategories = async (d) => { await setDoc(doc(db, "settings", "categories"), d); setCategories(d); };
-        
-        const syncMono = async () => {
-             if (!settings.monoKey || !settings.monoAccountId) return alert("Перевірте налаштування Monobank.");
-             setStatusMsg(`⏳ Синхронізація...`);
-             try {
-                const now = Math.floor(Date.now()/1000); const monthAgo = now - 2678400;
-                const res = await fetch(`https://corsproxy.io/?https://api.monobank.ua/personal/statement/${settings.monoAccountId}/${monthAgo}/${now}`, { headers: { 'X-Token': settings.monoKey } });
-                const data = await res.json();
-                if (!Array.isArray(data)) throw new Error("Помилка API");
-                const batch = writeBatch(db); let count=0;
-                const existingIds = new Set(transactions.map(t => t.bankId));
-                for(const item of data){
-                    if(existingIds.has(item.id)) continue;
-                    let cat = 'Інше';
-                    const desc = (item.description||'').toLowerCase();
-                    if(desc.includes('nova')) cat='Логістика'; 
-                    else if(desc.includes('atb')||desc.includes('silpo')) cat='Закупівля (COGS)';
-                    
-                    const catList = item.amount>0 ? categories.income : categories.expense;
-                    if(!catList.includes(cat) && cat!=='Логістика' && cat!=='Закупівля (COGS)') cat='Інше';
-
-                    batch.set(doc(collection(db,"transactions")), {
-                        amount: Math.abs(item.amount/100), description: item.description, cat, source: 'Monobank ФОП',
-                        type: item.amount>0?'income':'expense', isDividend: false, date: new Date(item.time*1000).toLocaleDateString('uk-UA'), createdAt: item.time*1000, bankId: item.id
-                    });
-                    count++;
-                }
-                if(count>0) await batch.commit();
-                setStatusMsg(count>0 ? `🚀 Додано: ${count}` : "👌 Нових немає");
-                setTimeout(()=>setStatusMsg(''), 3000);
-             } catch(e) { setStatusMsg("❌ Помилка"); alert(e.message); }
-        };
-
-        const deleteAllTransactions = async () => {
-            if(!confirm("Видалити ВСЕ?")) return;
-            const s = await getDocs(query(collection(db,"transactions"), limit(500)));
-            const b = writeBatch(db); s.docs.forEach(d=>b.delete(d.ref)); await b.commit();
-            alert("Очищено.");
-        };
-
-        // --- VIEWS ---
-        if (view === 'auth') return (
-            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-                <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl w-full max-w-sm text-center border border-white/10 shadow-2xl">
-                    <div className="w-16 h-16 bg-brand-500 rounded-2xl mx-auto flex items-center justify-center text-3xl font-bold text-white mb-6 shadow-lg">L</div>
-                    <h1 className="text-2xl font-bold text-white mb-2">Latiao Finance</h1>
-                    <p className="text-slate-400 text-sm mb-6">Вхід для команди</p>
-                    <form onSubmit={handleLogin}>
-                        <input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-3 rounded-xl mb-3 bg-slate-800 text-white border border-slate-700 outline-none focus:border-brand-500 transition"/>
-                        <input type="password" placeholder="Пароль" value={pass} onChange={e=>setPass(e.target.value)} className="w-full p-3 rounded-xl mb-6 bg-slate-800 text-white border border-slate-700 outline-none focus:border-brand-500 transition"/>
-                        <button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold transition shadow-lg">{loading?'Вхід...':'Увійти'}</button>
-                    </form>
-                    <button onClick={()=> { localStorage.removeItem('latiao_manager'); window.location.reload(); }} className="text-xs text-slate-500 mt-4 underline hover:text-white cursor-pointer">Скинути сесію (Якщо глючить)</button>
-                </div>
-            </div>
-        );
-
-        return (
-            <div className="flex h-screen overflow-hidden">
-                <aside className="w-64 bg-white border-r flex flex-col z-20">
-                    <div className="p-6 font-bold text-xl flex items-center gap-2 text-slate-800">
-                        <div className="w-8 h-8 bg-brand-500 rounded-lg text-white flex items-center justify-center shadow-md">L</div> 
-                        Latiao
-                    </div>
-                    
-                    <div className="px-6 mb-2">
-                        <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Меню</span>
-                    </div>
-
-                    <nav className="flex-1 px-4 space-y-1">
-                        {ALL_VIEWS.filter(v => canAccess(v.id) && v.id !== 'settings' && v.id !== 'managers').map(item => (
-                            <button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view===item.id ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
-                                <Icon name={item.icon} size={20}/> <span className="capitalize">{item.label}</span>
-                            </button>
-                        ))}
-                    </nav>
-                    
-                    <div className="p-4 border-t space-y-1">
-                        {canAccess('managers') && (
-                            <button onClick={()=>setView('managers')} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view==='managers' ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
-                                <Icon name="users" size={20}/> <span>Команда</span>
-                            </button>
-                        )}
-                        {canAccess('settings') && (
-                            <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view==='settings' ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
-                                <Icon name="settings" size={20}/> <span>Налаштування</span>
-                            </button>
-                        )}
-                        <button onClick={handleLogout} className="text-slate-400 hover:text-red-500 text-sm flex gap-2 w-full px-3 py-3 font-medium transition items-center"><Icon name="log-out" size={20}/> Вихід</button>
-                    </div>
-                </aside>
-
-                <main className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8 relative">
-                    {statusMsg && <div className="fixed top-6 right-6 bg-slate-800 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce border border-slate-700"><Icon name="loader" className="animate-spin text-brand-500"/> <span className="font-medium">{statusMsg}</span></div>}
-
-                    <div className="flex justify-between items-center mb-8 fade-in">
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-900 tracking-tight capitalize">
-                                {ALL_VIEWS.find(v=>v.id===view)?.label || 'Dashboard'}
-                            </h1>
-                            <p className="text-slate-400 text-sm mt-1">{user?.email || currentUser?.email} • {currentUser?.role === 'admin' ? 'Власник' : 'Менеджер'}</p>
-                        </div>
-                        {(view === 'dashboard' || view === 'ops') && (
-                            <div className="flex gap-3">
-                                 <button onClick={()=>setModalType('income')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="plus"/> Дохід</button>
-                                 <button onClick={()=>setModalType('expense')} className="bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg shadow-orange-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="minus"/> Витрата</button>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="fade-in pb-10">
-                        {loading && <div className="text-center py-20 text-slate-400 font-bold animate-pulse">Завантаження...</div>}
-                        {!loading && view === 'dashboard' && <DashboardView metrics={metrics} transactions={transactions} setView={setView} />}
-                        {!loading && view === 'pnl' && <PnLView metrics={metrics} transactions={transactions} />}
-                        {!loading && view === 'cashflow' && <CashFlowView metrics={metrics} />}
-                        {!loading && view === 'dividends' && <DividendsView metrics={metrics} transactions={transactions} setModalType={setModalType} />}
-                        {!loading && view === 'ops' && <OpsView transactions={transactions} deleteTx={deleteTx} syncMono={syncMono} categories={categories} />}
-                        {!loading && view === 'settings' && <SettingsView settings={settings} setSettings={setSettings} saveSettings={saveSettings} syncMono={syncMono} deleteAllTransactions={deleteAllTransactions} categories={categories} saveCategories={saveCategories} />}
-                        {!loading && view === 'managers' && <ManagersView db={db} />}
-                    </div>
-                </main>
-
-                {modalType && <TransactionModal type={modalType} close={()=>setModalType(null)} categories={categories} />}
-            </div>
-        );
-    };
-
-    // --- SUB COMPONENTS (EXPANDED TO PREVENT ERRORS) ---
-    
     const DashboardView = ({ metrics, transactions, setView }) => {
         const isHealthy = metrics.margin > 20;
         const healthStatus = isHealthy ? "Чудовий" : (metrics.margin > 0 ? "Нормальний" : "Критичний");
@@ -379,27 +74,24 @@
         return (
             <div className="space-y-8 animate-fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden group">
-                        <div className="absolute right-[-20px] top-[-20px] opacity-10 group-hover:scale-110 transition-transform"><Icon name="wallet" size={140}/></div>
+                    <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden">
                         <div className="text-slate-400 text-xs font-bold uppercase mb-2">Гроші (Cash)</div>
                         <div className="text-3xl font-mono font-bold">{metrics.totalCash.toLocaleString()} ₴</div>
-                        <p className="text-xs text-slate-500 mt-2">Доступні кошти бізнесу</p>
+                        <p className="text-xs text-slate-500 mt-2">Доступні кошти</p>
                     </div>
-                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                         <div className="text-slate-400 text-xs font-bold uppercase mb-2">Прибуток</div>
                         <div className={`text-3xl font-mono font-bold ${metrics.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{metrics.net.toLocaleString()} ₴</div>
-                        <div className={`mt-2 text-xs font-bold inline-block px-2 py-1 rounded bg-slate-50 ${healthColor}`}>Рентабельність: {metrics.margin}%</div>
+                        <div className={`mt-2 text-xs font-bold inline-block px-2 py-1 rounded bg-slate-50 ${healthColor}`}>Рент: {metrics.margin}%</div>
                     </div>
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                         <div className="text-slate-400 text-xs font-bold uppercase mb-2">Запас ходу</div>
                         <div className="text-3xl font-mono font-bold text-brand-500">{metrics.runway} днів</div>
-                        <p className="text-xs text-slate-400 mt-2">Скільки проживе бізнес без нових продажів</p>
+                        <p className="text-xs text-slate-400 mt-2">Без нових продажів</p>
                     </div>
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center">
                         <div className="text-slate-400 text-xs font-bold uppercase mb-2">Здоров'я</div>
-                        <div className={`text-xl font-bold ${healthColor} flex items-center gap-2`}>
-                            {isHealthy ? <Icon name="check-circle" /> : <Icon name="alert-circle" />} {healthStatus}
-                        </div>
+                        <div className={`text-xl font-bold ${healthColor} flex items-center gap-2`}>{isHealthy ? <Icon name="check-circle" /> : <Icon name="alert-circle" />} {healthStatus}</div>
                     </div>
                 </div>
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6">
@@ -416,13 +108,6 @@
     };
 
     const PnLView = ({ metrics, transactions }) => {
-        const opExItems = transactions.filter(t => t.type === 'expense' && !t.isDividend && t.cat !== 'Закупівля (COGS)').reduce((acc, t) => {
-            const ex = acc.find(i => i.cat === t.cat); 
-            if(ex) ex.val+=Number(t.amount); else acc.push({cat:t.cat, val:Number(t.amount)}); 
-            return acc;
-        }, []).sort((a,b)=>b.val-a.val);
-        const getPct = (val) => metrics.revenue ? ((val/metrics.revenue)*100).toFixed(1) : 0;
-        
         return (
             <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 animate-fade-in max-w-4xl mx-auto">
                 <h2 className="text-2xl font-bold mb-6">P&L Звіт</h2>
@@ -461,41 +146,40 @@
                 <button onClick={()=>setModalType('dividend')} className="w-full bg-white text-slate-900 py-3 rounded-xl font-bold">Зафіксувати виплату</button>
             </div>
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-                {transactions.filter(t=>t.isDividend).length === 0 ? <div className="text-center text-slate-400">Історія порожня</div> :
-                transactions.filter(t=>t.isDividend).map(t => (<div key={t.id} className="flex justify-between py-2 border-b last:border-0"><span>{t.date}</span><span className="font-bold text-purple-600">-{t.amount}</span></div>))}
+                {transactions.filter(t=>t.isDividend).map(t => (
+                    <div key={t.id} className="flex justify-between py-2 border-b last:border-0">
+                        <span>{t.date}</span><span className="font-bold text-purple-600">-{t.amount}</span>
+                    </div>
+                ))}
             </div>
         </div>
     );
 
-    const ManagersView = ({ db }) => {
-        const [managers, setManagers] = useState([]);
-        const [showModal, setShowModal] = useState(false);
-        useEffect(() => {
-            const q = query(collection(db, "managers"));
-            const unsub = onSnapshot(q, (snap) => setManagers(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-            return () => unsub();
-        }, []);
-        const deleteManager = async (id) => { if(confirm("Видалити менеджера?")) await deleteDoc(doc(db, "managers", id)); };
+    const OpsView = ({ transactions, deleteTx, syncMono }) => {
+        const [isSyncing, setIsSyncing] = useState(false);
+        const [filters, setFilters] = useState({ date: '', source: 'all', type: 'all' });
+        const handleSync = async () => { setIsSyncing(true); await syncMono(); setIsSyncing(false); };
+        const filtered = transactions.filter(t => {
+            if (filters.date) { const [y,m,d] = filters.date.split('-'); if(t.date !== `${d}.${m}.${y}`) return false; }
+            if (filters.source !== 'all') { const s = t.source||''; if(!s.includes(filters.source === 'mono' ? 'Monobank' : (filters.source === 'nova' ? 'Nova' : 'Готівка'))) return false; }
+            if (filters.type !== 'all' && t.type !== filters.type) return false;
+            return true;
+        });
         return (
-            <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
-                <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <div><h2 className="text-xl font-bold text-slate-800">Команда</h2><p className="text-sm text-slate-400">Управління доступом</p></div>
-                    <button onClick={()=>setShowModal(true)} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm">+ Додати</button>
+            <div className="space-y-4 animate-fade-in">
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex gap-4 justify-between items-center">
+                    <div className="flex gap-2">
+                        <input type="date" className="border rounded p-1 text-sm" value={filters.date} onChange={e=>setFilters({...filters, date:e.target.value})} />
+                        <select className="border rounded p-1 text-sm" value={filters.type} onChange={e=>setFilters({...filters, type:e.target.value})}><option value="all">Всі типи</option><option value="income">Дохід</option><option value="expense">Витрата</option></select>
+                    </div>
+                    <button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold">{isSyncing?"...":"Синхронізувати"}</button>
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                    {managers.map(m => (
-                        <div key={m.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative group">
-                            <button onClick={()=>deleteManager(m.id)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500"><Icon name="trash-2" size={16}/></button>
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xl">{m.name?.[0]||'U'}</div>
-                                <div><div className="font-bold text-lg">{m.name}</div><div className="text-xs text-slate-400">{m.email}</div></div>
-                            </div>
-                            <div className="flex flex-wrap gap-2">{(m.permissions||[]).map(p => <span key={p} className="text-[10px] bg-slate-50 border px-2 py-1 rounded uppercase font-bold text-slate-500">{ALL_VIEWS.find(v=>v.id===p)?.label || p}</span>)}</div>
-                            <div className="mt-4 text-xs text-slate-300">Пароль: {m.password}</div>
-                        </div>
-                    ))}
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-50 text-xs font-bold text-slate-400 uppercase"><tr><th className="p-4">Дата</th><th className="p-4">Опис</th><th className="p-4">Сума</th><th className="p-4"></th></tr></thead>
+                        <tbody>{filtered.map(t => (<tr key={t.id} className="border-b last:border-0 hover:bg-slate-50"><td className="p-4 text-sm text-slate-500">{t.date}</td><td className="p-4 font-bold text-sm">{t.description}</td><td className={`p-4 text-right font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>{(t.type==='income'?'+':'-')+(Number(t.amount)||0).toLocaleString()}</td><td className="p-4 text-right"><button onClick={()=>deleteTx(t.id)} className="text-slate-300 hover:text-red-500"><Icon name="trash-2" size={14}/></button></td></tr>))}</tbody>
+                    </table>
                 </div>
-                {showModal && <AddManagerModal db={db} close={()=>setShowModal(false)} />}
             </div>
         );
     };
@@ -508,6 +192,10 @@
             await addDoc(collection(db, "managers"), form);
             close();
         };
+        const ALL_VIEWS_REF = [
+            {id:'dashboard', label:'Огляд'}, {id:'ops', label:'Операції'}, {id:'pnl', label:'P&L Звіт'},
+            {id:'cashflow', label:'Cash Flow'}, {id:'dividends', label:'Дивіденди'}, {id:'settings', label:'Налаштування'}, {id:'managers', label:'Команда'}
+        ];
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
                 <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl">
@@ -516,7 +204,7 @@
                         <input placeholder="Ім'я" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="w-full border p-3 rounded-xl text-sm"/>
                         <input placeholder="Email (Логін)" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} className="w-full border p-3 rounded-xl text-sm"/>
                         <input placeholder="Пароль" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} className="w-full border p-3 rounded-xl text-sm"/>
-                        <div className="pt-2"><label className="text-xs font-bold uppercase text-slate-400 mb-2 block">Доступ:</label><div className="space-y-2">{ALL_VIEWS.filter(v=>v.id!=='dashboard').map(v => (<label key={v.id} className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-slate-50"><input type="checkbox" checked={form.permissions.includes(v.id)} onChange={()=>togglePerm(v.id)} /><span className="text-sm font-medium">{v.label}</span></label>))}</div></div>
+                        <div className="pt-2"><label className="text-xs font-bold uppercase text-slate-400 mb-2 block">Доступ:</label><div className="space-y-2">{ALL_VIEWS_REF.filter(v=>v.id!=='dashboard').map(v => (<label key={v.id} className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-slate-50"><input type="checkbox" checked={form.permissions.includes(v.id)} onChange={()=>togglePerm(v.id)} /><span className="text-sm font-medium">{v.label}</span></label>))}</div></div>
                         <button onClick={submit} className="w-full bg-brand-500 text-white py-3 rounded-xl font-bold mt-4">Створити</button>
                         <button onClick={close} className="w-full text-slate-400 py-2 text-sm">Скасувати</button>
                     </div>
@@ -525,20 +213,31 @@
         );
     };
 
-    const OpsView = ({ transactions, deleteTx, syncMono, categories }) => {
-        const [isSyncing, setIsSyncing] = useState(false);
-        const [filters, setFilters] = useState({ date: '', source: 'all', type: 'all' });
-        const handleSync = async () => { setIsSyncing(true); await syncMono(); setIsSyncing(false); };
-        const filtered = transactions.filter(t => {
-            if (filters.date) { const [y,m,d] = filters.date.split('-'); if(t.date !== `${d}.${m}.${y}`) return false; }
-            if (filters.source !== 'all') { const s = t.source||''; if(!s.includes(filters.source === 'mono' ? 'Monobank' : (filters.source === 'nova' ? 'Nova' : 'Готівка'))) return false; }
-            if (filters.type !== 'all' && t.type !== filters.type) return false;
-            return true;
-        });
+    const ManagersView = ({ db }) => {
+        const [managers, setManagers] = useState([]);
+        const [showModal, setShowModal] = useState(false);
+        useEffect(() => {
+            const q = query(collection(db, "managers"));
+            const unsub = onSnapshot(q, (snap) => setManagers(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+            return () => unsub();
+        }, []);
+        const deleteManager = async (id) => { if(confirm("Видалити?")) await deleteDoc(doc(db, "managers", id)); };
         return (
-            <div className="space-y-4 animate-fade-in">
-                <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex gap-4 justify-between items-center"><div className="flex gap-2"><input type="date" className="border rounded p-1 text-sm" value={filters.date} onChange={e=>setFilters({...filters, date:e.target.value})} /><select className="border rounded p-1 text-sm" value={filters.type} onChange={e=>setFilters({...filters, type:e.target.value})}><option value="all">Всі типи</option><option value="income">Дохід</option><option value="expense">Витрата</option></select></div><button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold">{isSyncing?"...":"Синхронізувати"}</button></div>
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden"><table className="w-full text-left"><thead className="bg-slate-50 text-xs font-bold text-slate-400 uppercase"><tr><th className="p-4">Дата</th><th className="p-4">Опис</th><th className="p-4">Сума</th><th className="p-4"></th></tr></thead><tbody>{filtered.map(t => (<tr key={t.id} className="border-b last:border-0 hover:bg-slate-50"><td className="p-4 text-sm text-slate-500">{t.date}</td><td className="p-4 font-bold text-sm">{t.description}</td><td className={`p-4 text-right font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>{(t.type==='income'?'+':'-')+(Number(t.amount)||0).toLocaleString()}</td><td className="p-4 text-right"><button onClick={()=>deleteTx(t.id)} className="text-slate-300 hover:text-red-500"><Icon name="trash-2" size={14}/></button></td></tr>))}</tbody></table></div>
+            <div className="max-w-4xl mx-auto space-y-6">
+                <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                    <div><h2 className="text-xl font-bold text-slate-800">Команда</h2><p className="text-sm text-slate-400">Управління доступом</p></div>
+                    <button onClick={()=>setShowModal(true)} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm">+ Додати</button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                    {managers.map(m => (
+                        <div key={m.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative group">
+                            <button onClick={()=>deleteManager(m.id)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500"><Icon name="trash-2" size={16}/></button>
+                            <div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xl">{m.name?.[0]||'U'}</div><div><div className="font-bold text-lg">{m.name}</div><div className="text-xs text-slate-400">{m.email}</div></div></div>
+                            <div className="mt-4 text-xs text-slate-300">Пароль: {m.password}</div>
+                        </div>
+                    ))}
+                </div>
+                {showModal && <AddManagerModal db={db} close={()=>setShowModal(false)} />}
             </div>
         );
     };
@@ -547,7 +246,11 @@
         const [newCatIn, setNewCatIn] = useState(''); const [newCatOut, setNewCatOut] = useState('');
         const addCat = (t, v, setter) => { if(!v) return; saveCategories({...categories, [t]: [...categories[t], v]}); setter(''); };
         return (
-            <div className="max-w-3xl mx-auto space-y-6 animate-fade-in"><div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100"><h2 className="font-bold text-xl mb-4">Налаштування</h2><div className="space-y-4"><input value={settings.monoKey} onChange={e=>setSettings({...settings, monoKey:e.target.value})} placeholder="Mono Token" className="w-full border p-3 rounded-xl"/><input value={settings.monoAccountId} onChange={e=>setSettings({...settings, monoAccountId:e.target.value})} placeholder="Account ID" className="w-full border p-3 rounded-xl"/><button onClick={()=>saveSettings(settings)} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold w-full">Зберегти</button></div></div><div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100"><h2 className="font-bold text-xl mb-4">Категорії</h2><div className="grid md:grid-cols-2 gap-4"><div><h3 className="text-sm font-bold text-emerald-600 mb-2">Доходи</h3><div className="flex gap-2 mb-2"><input value={newCatIn} onChange={e=>setNewCatIn(e.target.value)} className="border p-1 rounded w-full text-sm" /><button onClick={()=>addCat('income',newCatIn,setNewCatIn)} className="bg-emerald-500 text-white px-2 rounded">+</button></div><div className="flex flex-wrap gap-1">{categories.income.map(c=><span key={c} className="text-xs bg-emerald-50 px-2 py-1 rounded">{c}</span>)}</div></div><div><h3 className="text-sm font-bold text-red-600 mb-2">Витрати</h3><div className="flex gap-2 mb-2"><input value={newCatOut} onChange={e=>setNewCatOut(e.target.value)} className="border p-1 rounded w-full text-sm" /><button onClick={()=>addCat('expense',newCatOut,setNewCatOut)} className="bg-red-500 text-white px-2 rounded">+</button></div><div className="flex flex-wrap gap-1">{categories.expense.map(c=><span key={c} className="text-xs bg-red-50 px-2 py-1 rounded">{c}</span>)}</div></div></div></div><div className="bg-red-50 p-8 rounded-3xl border border-red-100"><button onClick={deleteAllTransactions} className="text-red-600 font-bold text-sm w-full">Очистити базу</button></div></div>
+            <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+                <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100"><h2 className="font-bold text-xl mb-4">Налаштування</h2><div className="space-y-4"><input value={settings.monoKey} onChange={e=>setSettings({...settings, monoKey:e.target.value})} placeholder="Mono Token" className="w-full border p-3 rounded-xl"/><input value={settings.monoAccountId} onChange={e=>setSettings({...settings, monoAccountId:e.target.value})} placeholder="Account ID" className="w-full border p-3 rounded-xl"/><button onClick={()=>saveSettings(settings)} className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold w-full">Зберегти</button></div></div>
+                <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100"><h2 className="font-bold text-xl mb-4">Категорії</h2><div className="grid md:grid-cols-2 gap-4"><div><h3 className="text-sm font-bold text-emerald-600 mb-2">Доходи</h3><div className="flex gap-2 mb-2"><input value={newCatIn} onChange={e=>setNewCatIn(e.target.value)} className="border p-1 rounded w-full text-sm" /><button onClick={()=>addCat('income',newCatIn,setNewCatIn)} className="bg-emerald-500 text-white px-2 rounded">+</button></div><div className="flex flex-wrap gap-1">{categories.income.map(c=><span key={c} className="text-xs bg-emerald-50 px-2 py-1 rounded">{c}</span>)}</div></div><div><h3 className="text-sm font-bold text-red-600 mb-2">Витрати</h3><div className="flex gap-2 mb-2"><input value={newCatOut} onChange={e=>setNewCatOut(e.target.value)} className="border p-1 rounded w-full text-sm" /><button onClick={()=>addCat('expense',newCatOut,setNewCatOut)} className="bg-red-500 text-white px-2 rounded">+</button></div><div className="flex flex-wrap gap-1">{categories.expense.map(c=><span key={c} className="text-xs bg-red-50 px-2 py-1 rounded">{c}</span>)}</div></div></div></div>
+                <div className="bg-red-50 p-8 rounded-3xl border border-red-100"><button onClick={deleteAllTransactions} className="text-red-600 font-bold text-sm w-full">Очистити базу</button></div>
+            </div>
         );
     };
 
@@ -557,6 +260,202 @@
         const cats = type==='income' ? categories.income : categories.expense;
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"><div className="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl p-8 space-y-4"><h3 className="font-bold text-lg">{type==='dividend'?'Виплата':'Нова операція'}</h3><input type="number" placeholder="Сума" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="w-full text-3xl font-bold border-b p-2 outline-none"/>{type!=='dividend' && <input type="text" placeholder="Опис" value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className="w-full border p-3 rounded-xl"/>}{type!=='dividend' && <select value={form.cat} onChange={e=>setForm({...form, cat:e.target.value})} className="w-full border p-3 rounded-xl">{cats.map(c=><option key={c} value={c}>{c}</option>)}</select>}<button onClick={submit} className="w-full bg-brand-500 text-white py-3 rounded-xl font-bold">Зберегти</button><button onClick={close} className="w-full py-2 text-slate-400">Скасувати</button></div></div>
+        );
+    };
+
+    // --- MAIN APP ---
+
+    const App = () => {
+        const [currentUser, setCurrentUser] = useState(null); 
+        const [view, setView] = useState('auth');
+        const [transactions, setTransactions] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [statusMsg, setStatusMsg] = useState('');
+        const [settings, setSettings] = useState({ monoKey: '', novaKey: '', monoAccountId: '' });
+        const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+        const [email, setEmail] = useState('');
+        const [pass, setPass] = useState('');
+        const [modalType, setModalType] = useState(null);
+
+        const ALL_VIEWS_APP = [
+            {id:'dashboard', label:'Огляд', icon:'layout-dashboard'},
+            {id:'ops', label:'Операції', icon:'list'},
+            {id:'pnl', label:'P&L Звіт', icon:'pie-chart'},
+            {id:'cashflow', label:'Cash Flow', icon:'banknote'},
+            {id:'dividends', label:'Дивіденди', icon:'gem'},
+            {id:'settings', label:'Налаштування', icon:'settings'},
+            {id:'managers', label:'Команда', icon:'users'} 
+        ];
+
+        // Auth Logic
+        useEffect(() => {
+            const unsub = onAuthStateChanged(auth, async (u) => {
+                if (u) {
+                    setCurrentUser({ uid: u.uid, email: u.email, role: 'admin', permissions: ['all'] });
+                    setView('dashboard');
+                    loadData();
+                } else {
+                    try {
+                        const storedManager = localStorage.getItem('latiao_manager');
+                        if (storedManager) {
+                            setCurrentUser(JSON.parse(storedManager));
+                            setView('dashboard');
+                            loadData();
+                        } else {
+                            setCurrentUser(null);
+                            setView('auth');
+                            setLoading(false);
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('latiao_manager');
+                        setView('auth');
+                        setLoading(false);
+                    }
+                }
+            });
+            return () => unsub();
+        }, []);
+
+        const loadData = async () => {
+            setLoading(true);
+            try {
+                const sSnap = await getDoc(doc(db, "settings", "global"));
+                if (sSnap.exists()) setSettings(sSnap.data());
+                const cSnap = await getDoc(doc(db, "settings", "categories"));
+                if (cSnap.exists()) setCategories(cSnap.data());
+                const q = query(collection(db, "transactions"));
+                onSnapshot(q, (snap) => {
+                    const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    list.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    setTransactions(list);
+                    setLoading(false);
+                });
+            } catch (e) { console.error(e); setLoading(false); }
+        };
+
+        const metrics = useMemo(() => {
+            // (Same metrics calculation logic)
+            const income = transactions.filter(t => t.type === 'income' && !t.isDividend);
+            const expense = transactions.filter(t => t.type === 'expense' && !t.isDividend);
+            const revenue = income.reduce((s,t) => s + (Number(t.amount)||0), 0);
+            const cogs = expense.filter(t => t.cat === 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0);
+            const opex = expense.filter(t => t.cat !== 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0);
+            const totalExpense = cogs + opex;
+            const totalCash = transactions.reduce((s,t) => t.type==='income' ? s+(Number(t.amount)||0) : s-(Number(t.amount)||0), 0);
+            const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s+(Number(t.amount)||0), 0);
+            const net = revenue - totalExpense;
+            const balances = { mono: 0, nova: 0, cash: 0 };
+            transactions.forEach(t => {
+                const src = t.source || '';
+                const key = src.includes('Monobank') ? 'mono' : (src.includes('Nova') ? 'nova' : 'cash');
+                if(balances[key] !== undefined) balances[key] += (t.type==='income' ? (Number(t.amount)||0) : -(Number(t.amount)||0));
+            });
+            const runway = totalExpense > 0 ? (totalCash / (totalExpense / 30)).toFixed(0) : "∞";
+            return { revenue, cogs, opex, net, totalCash, dividends, balances, margin: revenue ? ((net/revenue)*100).toFixed(0) : 0, totalExpense, runway, operationalCashFlow: revenue - totalExpense, financingCashFlow: -dividends, netCashChange: (revenue - totalExpense) - dividends };
+        }, [transactions]);
+
+        const handleLogin = async (e) => {
+            e.preventDefault();
+            setLoading(true);
+            try { await signInWithEmailAndPassword(auth, email, pass); } catch (err) {
+                try {
+                    const q = query(collection(db, "managers"), where("email", "==", email), where("password", "==", pass));
+                    const snapshot = await getDocs(q);
+                    if (!snapshot.empty) {
+                        const m = snapshot.docs[0].data();
+                        const user = { uid: snapshot.docs[0].id, email: m.email, name: m.name, role: 'manager', permissions: m.permissions || [] };
+                        localStorage.setItem('latiao_manager', JSON.stringify(user));
+                        setCurrentUser(user);
+                        setView('dashboard');
+                        loadData();
+                    } else { alert('Error'); setLoading(false); }
+                } catch (e) { alert(e.message); setLoading(false); }
+            }
+        };
+
+        const canAccess = (viewId) => {
+            if (!currentUser) return false;
+            if (currentUser.role === 'admin') return true;
+            return currentUser.permissions?.includes(viewId);
+        };
+
+        // Actions
+        const deleteTx = async (id) => { if(confirm('Del?')) await deleteDoc(doc(db, "transactions", id)); };
+        const saveS = async (d) => { await setDoc(doc(db, "settings", "global"), d); setSettings(d); alert('Saved'); };
+        const saveC = async (d) => { await setDoc(doc(db, "settings", "categories"), d); setCategories(d); };
+        const syncM = async () => {
+             if (!settings.monoKey || !settings.monoAccountId) return alert("Setup API first");
+             setStatusMsg("Syncing...");
+             try {
+                const now = Math.floor(Date.now()/1000); 
+                const res = await fetch(`https://corsproxy.io/?https://api.monobank.ua/personal/statement/${settings.monoAccountId}/${now - 2678400}/${now}`, { headers: { 'X-Token': settings.monoKey } });
+                const data = await res.json();
+                if (!Array.isArray(data)) throw new Error("API Error");
+                const batch = writeBatch(db); let count=0; const ids = new Set(transactions.map(t=>t.bankId));
+                data.forEach(item => {
+                    if(!ids.has(item.id)) {
+                        let cat = 'Інше'; const d = (item.description||'').toLowerCase();
+                        if(d.includes('nova')) cat='Логістика'; else if(d.includes('atb')||d.includes('silpo')) cat='Закупівля (COGS)';
+                        batch.set(doc(collection(db,"transactions")), { amount: Math.abs(item.amount/100), description: item.description, cat, source: 'Monobank ФОП', type: item.amount>0?'income':'expense', isDividend: false, date: new Date(item.time*1000).toLocaleDateString('uk-UA'), createdAt: item.time*1000, bankId: item.id });
+                        count++;
+                    }
+                });
+                if(count>0) await batch.commit();
+                setStatusMsg(`Added: ${count}`); setTimeout(()=>setStatusMsg(''), 3000);
+             } catch(e) { setStatusMsg("Error"); }
+        };
+        const delAll = async () => { if(confirm("Reset DB?")) { const s = await getDocs(query(collection(db,"transactions"), limit(500))); const b = writeBatch(db); s.docs.forEach(d=>b.delete(d.ref)); await b.commit(); alert("Done"); } };
+
+        if (view === 'auth') return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+                <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl w-full max-w-sm text-center border border-white/10 shadow-2xl">
+                    <h1 className="text-2xl font-bold text-white mb-6">Latiao Finance</h1>
+                    <form onSubmit={handleLogin}>
+                        <input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-3 rounded-xl mb-3 bg-slate-800 text-white border border-slate-700"/>
+                        <input type="password" placeholder="Password" value={pass} onChange={e=>setPass(e.target.value)} className="w-full p-3 rounded-xl mb-6 bg-slate-800 text-white border border-slate-700"/>
+                        <button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold transition shadow-lg">{loading?'...':'Login'}</button>
+                    </form>
+                    <button onClick={()=>{localStorage.removeItem('latiao_manager');window.location.reload()}} className="text-xs text-slate-500 mt-4 underline cursor-pointer">Reset Session</button>
+                </div>
+            </div>
+        );
+
+        return (
+            <div className="flex h-screen overflow-hidden">
+                <aside className="w-64 bg-white border-r flex flex-col z-20">
+                    <div className="p-6 font-bold text-xl flex items-center gap-2 text-slate-800">Latiao</div>
+                    <nav className="flex-1 px-4 space-y-1">
+                        {ALL_VIEWS_APP.filter(v => canAccess(v.id) && v.id !== 'settings' && v.id !== 'managers').map(item => (
+                            <button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view===item.id ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
+                                <Icon name={item.icon} size={20}/> <span className="capitalize">{item.label}</span>
+                            </button>
+                        ))}
+                    </nav>
+                    <div className="p-4 border-t space-y-1">
+                        {canAccess('managers') && <button onClick={()=>setView('managers')} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold ${view==='managers'?'active sidebar-link':'text-slate-500'}`}><Icon name="users" size={20}/> <span>Команда</span></button>}
+                        {canAccess('settings') && <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold ${view==='settings'?'active sidebar-link':'text-slate-500'}`}><Icon name="settings" size={20}/> <span>Налаштування</span></button>}
+                        <button onClick={()=>{signOut(auth);localStorage.removeItem('latiao_manager');setCurrentUser(null);setView('auth');}} className="text-slate-400 hover:text-red-500 text-sm flex gap-2 w-full px-3 py-3 font-medium items-center"><Icon name="log-out" size={20}/> Вихід</button>
+                    </div>
+                </aside>
+                <main className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8 relative">
+                    {statusMsg && <div className="fixed top-6 right-6 bg-slate-800 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3"><Icon name="loader" className="animate-spin"/> {statusMsg}</div>}
+                    <div className="flex justify-between items-center mb-8 fade-in">
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight capitalize">{ALL_VIEWS_APP.find(v=>v.id===view)?.label}</h1>
+                        {(view==='dashboard'||view==='ops') && <div className="flex gap-3"><button onClick={()=>setModalType('income')} className="bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold flex gap-2 items-center">+ Дохід</button><button onClick={()=>setModalType('expense')} className="bg-brand-500 text-white px-5 py-2.5 rounded-xl font-bold flex gap-2 items-center">- Витрата</button></div>}
+                    </div>
+                    <div className="fade-in pb-10">
+                        {loading && <div className="text-center py-20 text-slate-400 font-bold animate-pulse">Wait...</div>}
+                        {!loading && view==='dashboard' && <DashboardView metrics={metrics} transactions={transactions} setView={setView}/>}
+                        {!loading && view==='pnl' && <PnLView metrics={metrics} transactions={transactions}/>}
+                        {!loading && view==='cashflow' && <CashFlowView metrics={metrics}/>}
+                        {!loading && view==='dividends' && <DividendsView metrics={metrics} transactions={transactions} setModalType={setModalType}/>}
+                        {!loading && view==='ops' && <OpsView transactions={transactions} deleteTx={deleteTx} syncMono={syncM}/>}
+                        {!loading && view==='settings' && <SettingsView settings={settings} setSettings={setSettings} saveSettings={saveS} syncMono={syncM} deleteAllTransactions={delAll} categories={categories} saveCategories={saveC}/>}
+                        {!loading && view==='managers' && <ManagersView db={db}/>}
+                    </div>
+                </main>
+                {modalType && <TransactionModal type={modalType} close={()=>setModalType(null)} categories={categories}/>}
+            </div>
         );
     };
 
