@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latiao Фінанси</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #f3f4f6; font-family: 'Inter', sans-serif; }
+        .latiao-orange { color: #FF5722; }
+        .bg-latiao { background-color: #FF5722; }
+        .nav-item.active { background-color: #FEF2EE; color: #FF5722; border-right: 3px solid #FF5722; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Mock Data ---
+        const initialTransactions = [
+            { id: 1, date: '2025-12-27', amount: 1500, type: 'income', category: 'Продажі', source: 'monobank', description: 'Замовлення #4021', status: 'confirmed' },
+            { id: 2, date: '2025-12-27', amount: -3200, type: 'expense', category: 'Закупівля (COGS)', source: 'NovaPay', description: 'Постачальник Снеків', status: 'confirmed' },
+            { id: 3, date: '2025-12-26', amount: -450, type: 'expense', category: 'Реклама', source: 'monobank', description: 'FACEBOOK ADS *I5521', status: 'confirmed' },
+            { id: 4, date: '2025-12-26', amount: -120, type: 'expense', category: null, source: 'monobank', description: 'Комісія банку', status: 'pending' },
+            { id: 5, date: '2025-12-25', amount: 8000, type: 'income', category: 'Продажі', source: 'NovaPay', description: 'Накладений платіж реєстр', status: 'confirmed' },
+        ];
+
+        const accounts = [
+            { name: 'Monobank ФОП', balance: 45200, type: 'bank' },
+            { name: 'NovaPay', balance: 12500, type: 'wallet' },
+            { name: 'Сейф (Готівка)', balance: 3000, type: 'cash' },
+        ];
+
+        // --- Components ---
+
+        const Sidebar = ({ activeTab, setActiveTab }) => (
+            <div className="w-64 bg-white h-screen fixed left-0 top-0 shadow-lg flex flex-col z-10">
+                <div className="p-6 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-latiao rounded-lg flex items-center justify-center text-white font-bold">L</div>
+                    <h1 className="text-xl font-bold text-gray-800">Latiao Фінанси</h1>
+                </div>
+                <nav className="flex-1 mt-6">
+                    {['Дашборд', 'Операції', 'P&L Звіт', 'Cash Flow', 'Дивіденди'].map((item) => (
+                        <div 
+                            key={item}
+                            onClick={() => setActiveTab(item)}
+                            className={`p-4 cursor-pointer font-medium transition-colors ${activeTab === item ? 'nav-item active' : 'text-gray-500 hover:text-gray-800'}`}
+                        >
+                            {item}
+                        </div>
+                    ))}
+                </nav>
+                <div className="p-6 border-t">
+                    <div className="text-xs text-gray-400 uppercase mb-2">Статус системи</div>
+                    <div className="flex items-center gap-2 text-sm text-green-600">
+                        <span className="w-2 h-2 rounded-full bg-green-500"></span> Mono: Connected
+                    </div>
+                     <div className="flex items-center gap-2 text-sm text-green-600 mt-1">
+                        <span className="w-2 h-2 rounded-full bg-green-500"></span> NovaPay: Active
+                    </div>
+                </div>
+            </div>
+        );
+
+        const KPI = ({ title, value, subtext, alert }) => (
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="text-gray-500 text-sm font-medium mb-1">{title}</div>
+                <div className={`text-2xl font-bold ${alert ? 'text-red-500' : 'text-gray-800'}`}>{value}</div>
+                {subtext && <div className="text-xs text-gray-400 mt-2">{subtext}</div>}
+            </div>
+        );
+
+        const TransactionRow = ({ t }) => (
+            <tr className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                <td className="p-4 text-sm text-gray-600">{t.date}</td>
+                <td className="p-4">
+                    <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded ${t.source === 'monobank' ? 'bg-black text-white' : 'bg-red-500 text-white'}`}>
+                            {t.source === 'monobank' ? 'Mono' : 'NP'}
+                        </span>
+                        <span className="text-sm font-medium text-gray-800">{t.description}</span>
+                    </div>
+                </td>
+                <td className="p-4 text-sm">
+                    {t.status === 'pending' ? (
+                        <button className="text-latiao text-xs border border-orange-200 bg-orange-50 px-2 py-1 rounded hover:bg-orange-100">
+                            + Класифікувати
+                        </button>
+                    ) : (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{t.category}</span>
+                    )}
+                </td>
+                <td className={`p-4 text-sm font-bold text-right ${t.amount > 0 ? 'text-green-600' : 'text-gray-800'}`}>
+                    {t.amount > 0 ? '+' : ''}{t.amount} ₴
+                </td>
+            </tr>
+        );
+
+        const Dashboard = () => (
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <KPI title="Всього на рахунках" value="60 700 ₴" subtext="Mono + NP + Cash" />
+                    <KPI title="Виручка (Цей місяць)" value="152 000 ₴" subtext="План: 150 000 ₴ (Виконано!)" />
+                    <KPI title="Чистий прибуток" value="45 200 ₴" subtext="Маржинальність: 29%" />
+                    <KPI title="Фінансова подушка" value="35 днів" subtext="Без нових надходжень" alert={true} />
+                </div>
+
+                <div className="grid grid-cols-3 gap-6">
+                    <div className="col-span-2 bg-white p-6 rounded-xl shadow-sm">
+                        <h3 className="font-bold text-gray-800 mb-4">Структура витрат (Топ 5)</h3>
+                        <div className="space-y-3">
+                            {/* Dummy bars */}
+                            <div className="flex items-center gap-2 text-sm"><div className="w-24">Закупівля</div><div className="flex-1 bg-gray-100 h-2 rounded"><div className="bg-gray-800 h-2 rounded" style={{width: '60%'}}></div></div> 60%</div>
+                            <div className="flex items-center gap-2 text-sm"><div className="w-24">Реклама</div><div className="flex-1 bg-gray-100 h-2 rounded"><div className="bg-latiao h-2 rounded" style={{width: '25%'}}></div></div> 25%</div>
+                            <div className="flex items-center gap-2 text-sm"><div className="w-24">Доставка</div><div className="flex-1 bg-gray-100 h-2 rounded"><div className="bg-gray-400 h-2 rounded" style={{width: '10%'}}></div></div> 10%</div>
+                        </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm">
+                         <h3 className="font-bold text-gray-800 mb-4">Швидкі дії</h3>
+                         <button className="w-full bg-latiao text-white py-3 rounded-lg mb-3 hover:bg-orange-600 transition shadow-lg shadow-orange-200 font-medium">
+                            + Додати витрату (Кеш)
+                         </button>
+                         <button className="w-full border border-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition font-medium">
+                            Виплатити дивіденди
+                         </button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const Operations = ({ transactions }) => (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                    <h2 className="font-bold text-gray-700">Останні транзакції</h2>
+                    <div className="flex gap-2">
+                        <button className="px-3 py-1 text-sm bg-white border rounded shadow-sm">Всі</button>
+                        <button className="px-3 py-1 text-sm bg-white border rounded shadow-sm text-red-500">Нерозподілені (1)</button>
+                    </div>
+                </div>
+                <table className="w-full">
+                    <thead className="bg-gray-50 text-left">
+                        <tr>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Дата</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Опис / Джерело</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Стаття</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 text-right uppercase">Сума</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {transactions.map(t => <TransactionRow key={t.id} t={t} />)}
+                    </tbody>
+                </table>
+            </div>
+        );
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('Дашборд');
+
+            return (
+                <div className="flex min-h-screen">
+                    <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <main className="flex-1 ml-64 p-8">
+                        <header className="flex justify-between items-center mb-8">
+                            <h2 className="text-2xl font-bold text-gray-800">{activeTab}</h2>
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <div className="text-sm font-bold text-gray-800">Руслан</div>
+                                    <div className="text-xs text-gray-500">Власник • Latiao Snack</div>
+                                </div>
+                                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                            </div>
+                        </header>
+                        
+                        {activeTab === 'Дашборд' && <Dashboard />}
+                        {activeTab === 'Операції' && <Operations transactions={initialTransactions} />}
+                        
+                        {/* Placeholder for other tabs */}
+                        {(activeTab !== 'Дашборд' && activeTab !== 'Операції') && (
+                            <div className="text-center text-gray-400 mt-20">
+                                <p>Розділ "{activeTab}" у розробці...</p>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
