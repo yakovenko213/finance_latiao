@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao Finance | UA Enterprise Fixed</title>
+    <title>Latiao Finance | UA Enterprise v9.2</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -30,11 +30,10 @@
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Logos - ОНОВЛЕНО ЛОГО МОНО */
+        /* Logos */
         .logo-mono { background-image: url('https://multicast.com.ua/wp-content/uploads/2024/04/monobank-logo.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
         .logo-nova { background-image: url('https://novapay.ua/wp-content/themes/novapay/assets/img/logo.svg'); background-size: contain; background-repeat: no-repeat; background-position: center; }
         
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -46,7 +45,7 @@
 
 <script type="text/babel" data-type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const firebaseConfig = {
@@ -65,7 +64,6 @@
 
     const { useState, useEffect, useMemo } = React;
 
-    // --- ICONS ---
     const Icon = ({ name, size = 18, className }) => {
         useEffect(() => { lucide.createIcons(); }, [name]);
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
@@ -78,19 +76,16 @@
         const [loading, setLoading] = useState(true);
         const [statusMsg, setStatusMsg] = useState('');
         
-        // Settings State - ЗМІНЕНО ЛОГІКУ РАХУНКУ ЗА ЗАМОВЧУВАННЯМ
         const [settings, setSettings] = useState({ 
             monoKey: '', 
             novaKey: '',
-            monoAccountId: '' // Тепер порожньо за замовчуванням, щоб змусити вибрати
+            monoAccountId: ''
         });
 
-        // Auth Inputs
         const [email, setEmail] = useState('');
         const [pass, setPass] = useState('');
         const [modalType, setModalType] = useState(null);
 
-        // --- LOAD DATA ---
         useEffect(() => {
             const unsub = onAuthStateChanged(auth, async (u) => {
                 setUser(u);
@@ -98,13 +93,11 @@
                     setView('dashboard');
                     setLoading(true);
 
-                    // Load Settings
                     try {
                         const sSnap = await getDoc(doc(db, "settings", "global"));
                         if (sSnap.exists()) setSettings(sSnap.data());
                     } catch(e) { console.error(e); }
 
-                    // Load Transactions
                     const q = query(collection(db, "transactions"));
                     const unsubDb = onSnapshot(q, (snap) => {
                         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -121,7 +114,6 @@
             return () => unsub();
         }, []);
 
-        // --- CALCULATIONS ---
         const metrics = useMemo(() => {
             const income = transactions.filter(t => t.type === 'income' && !t.isDividend);
             const expense = transactions.filter(t => t.type === 'expense' && !t.isDividend);
@@ -134,7 +126,6 @@
             const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s+Number(t.amount), 0);
             const net = revenue - cogs - opex;
 
-            // Balances
             const balances = { mono: 0, nova: 0, cash: 0 };
             transactions.forEach(t => {
                 const src = t.source?.includes('Monobank') ? 'mono' : (t.source?.includes('Nova') ? 'nova' : 'cash');
@@ -144,7 +135,6 @@
             return { revenue, cogs, opex, net, totalCash, dividends, balances, margin: revenue ? ((net/revenue)*100).toFixed(0) : 0 };
         }, [transactions]);
 
-        // --- ACTIONS ---
         const handleLogin = async (e) => {
             e.preventDefault();
             try { await signInWithEmailAndPassword(auth, email, pass); } catch { alert('Невірний логін або пароль'); }
@@ -156,7 +146,6 @@
 
         const saveSettings = async (newSettings) => {
             const toSave = newSettings || settings;
-            // Validation before saving
             if (toSave.monoKey && !toSave.monoAccountId) {
                  alert("Увага: Ви ввели токен, але не обрали конкретний рахунок. Синхронізація не працюватиме, доки ви не оберете рахунок.");
             }
@@ -165,32 +154,28 @@
             alert('Налаштування збережено!');
         };
 
-        // --- MONO SYNC LOGIC (ОНОВЛЕНО ВАЛІДАЦІЮ) ---
         const syncMono = async () => {
             if (!settings.monoKey) return alert("Будь ласка, введіть X-Token Monobank в налаштуваннях.");
-            
-            // НОВА ПЕРЕВІРКА: Рахунок має бути обраний
             if (!settings.monoAccountId || settings.monoAccountId === '0') {
-                 return alert("Помилка: Не обрано конкретний рахунок для синхронізації. Будь ласка, оберіть рахунок зі списку в налаштуваннях і збережіть.");
+                 return alert("Помилка: Не обрано конкретний рахунок. Зайдіть в налаштування та оберіть рахунок.");
             }
 
-            setStatusMsg(`⏳ Підключення до Monobank (Рахунок: ${settings.monoAccountId.substring(0, 8)}...)...`);
+            setStatusMsg(`⏳ Синхронізація з Monobank...`);
             
             const now = Math.floor(Date.now() / 1000);
             const monthAgo = now - (31 * 24 * 60 * 60); 
             const accountId = settings.monoAccountId; 
 
-            // Proxy to bypass CORS
             const url = `https://corsproxy.io/?https://api.monobank.ua/personal/statement/${accountId}/${monthAgo}/${now}`;
 
             try {
                 const res = await fetch(url, { headers: { 'X-Token': settings.monoKey } });
-                if (!res.ok) throw new Error(`Помилка API: ${res.status} (Можливо, невірний ID рахунку)`);
+                if (!res.ok) throw new Error(`Помилка API: ${res.status}`);
                 const data = await res.json();
                 
-                if (!Array.isArray(data)) throw new Error("Отримано некоректні дані. Перевірте чи вірно обрано рахунок.");
+                if (!Array.isArray(data)) throw new Error("Отримано некоректні дані.");
 
-                setStatusMsg(`✅ Отримано ${data.length} транзакцій з обраного рахунку. Обробка...`);
+                setStatusMsg(`✅ Отримано ${data.length} транзакцій. Обробка...`);
                 const batch = writeBatch(db);
                 let count = 0;
                 const existingIds = new Set(transactions.map(t => t.bankId));
@@ -201,7 +186,6 @@
                     const amount = Math.abs(item.amount / 100);
                     const isIncome = item.amount > 0;
                     
-                    // Auto-categorization
                     let cat = 'Інше';
                     const desc = (item.description || '').toLowerCase();
                     if (desc.includes('nova') || desc.includes('пошта')) cat = 'Логістика';
@@ -215,7 +199,7 @@
                         amount: amount,
                         description: item.description,
                         cat: cat,
-                        source: 'Monobank ФОП', // Можна змінити якщо треба, але це лише текстова мітка
+                        source: 'Monobank ФОП',
                         type: isIncome ? 'income' : 'expense',
                         isDividend: false,
                         date: new Date(item.time * 1000).toLocaleDateString('uk-UA'),
@@ -227,22 +211,19 @@
 
                 if (count > 0) {
                     await batch.commit();
-                    setStatusMsg(`🚀 Додано нових операцій: ${count}`);
+                    setStatusMsg(`🚀 Додано нових: ${count}`);
                 } else {
-                    setStatusMsg("👌 Всі операції з цього рахунку вже є в базі.");
+                    setStatusMsg("👌 Нових операцій немає.");
                 }
                 setTimeout(() => setStatusMsg(''), 4000);
 
             } catch (err) {
                 console.error(err);
                 setStatusMsg(`❌ Помилка: ${err.message}`);
-                alert("Не вдалося завантажити. Переконайтеся, що обрали правильний рахунок.");
+                alert("Не вдалося завантажити.");
             }
         };
 
-        // --- VIEWS ---
-
-        // 1. AUTH SCREEN
         if (view === 'auth') return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
                 <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl w-full max-w-sm text-center border border-white/10 shadow-2xl">
@@ -256,25 +237,18 @@
             </div>
         );
 
-        // 2. MAIN LAYOUT
         return (
             <div className="flex h-screen overflow-hidden">
-                {/* SIDEBAR */}
                 <aside className="w-64 bg-white border-r flex flex-col z-20">
                     <div className="p-6 font-bold text-xl flex items-center gap-2 text-slate-800">
                         <div className="w-8 h-8 bg-brand-500 rounded-lg text-white flex items-center justify-center shadow-md">L</div> 
                         Latiao
                     </div>
                     <nav className="flex-1 px-4 space-y-1 mt-2">
-                        {[
-                            {id:'dashboard', icon:'layout-dashboard', label:'Дашборд'},
-                            {id:'ops', icon:'list', label:'Журнал операцій'},
-                            {id:'pnl', icon:'pie-chart', label:'P&L Звіт'},
-                            {id:'dividends', icon:'gem', label:'Дивіденди'},
-                            {id:'settings', icon:'settings', label:'Налаштування'}
-                        ].map(item => (
-                            <button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view===item.id ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
-                                <Icon name={item.icon} size={20}/> {item.label}
+                        {['dashboard','ops','pnl','dividends','settings'].map(item => (
+                            <button key={item} onClick={()=>setView(item)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view===item ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
+                                <Icon name={item==='ops'?'list':(item==='pnl'?'pie-chart':(item==='dividends'?'gem':(item==='settings'?'settings':'layout-dashboard')))} size={20}/> 
+                                <span className="capitalize">{item === 'ops' ? 'Журнал' : (item === 'settings' ? 'Налаштування' : item)}</span>
                             </button>
                         ))}
                     </nav>
@@ -283,10 +257,7 @@
                     </div>
                 </aside>
 
-                {/* MAIN AREA */}
                 <main className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8 relative">
-                    
-                    {/* TOAST NOTIFICATION */}
                     {statusMsg && (
                         <div className="fixed top-6 right-6 bg-slate-800 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce border border-slate-700">
                             <Icon name="loader" className="animate-spin text-brand-500"/> 
@@ -294,10 +265,9 @@
                         </div>
                     )}
 
-                    {/* TOP HEADER */}
                     <div className="flex justify-between items-center mb-8 fade-in">
                         <div>
-                            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                            <h1 className="text-3xl font-bold text-slate-900 tracking-tight capitalize">
                                 {view === 'dashboard' && 'Огляд бізнесу'}
                                 {view === 'ops' && 'Всі транзакції'}
                                 {view === 'pnl' && 'Аналітика P&L'}
@@ -314,7 +284,6 @@
 
                     <div className="fade-in pb-10">
                         {loading && <div className="text-center py-20 text-slate-400 font-bold animate-pulse">Завантаження даних...</div>}
-                        
                         {!loading && view === 'dashboard' && <DashboardView metrics={metrics} transactions={transactions} setView={setView} />}
                         {!loading && view === 'pnl' && <PnLView metrics={metrics} transactions={transactions} />}
                         {!loading && view === 'dividends' && <DividendsView metrics={metrics} transactions={transactions} setModalType={setModalType} />}
@@ -327,8 +296,6 @@
             </div>
         );
     };
-
-    // --- SUB-COMPONENTS ---
 
     const DashboardView = ({ metrics, transactions, setView }) => (
         <div className="space-y-8">
@@ -356,7 +323,6 @@
                     <div className="text-3xl font-mono font-bold text-purple-600">{metrics.dividends.toLocaleString()} ₴</div>
                 </div>
             </div>
-
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="p-6 border-b border-slate-100 flex justify-between items-center">
                     <h3 className="font-bold text-lg text-slate-800">Останні операції</h3>
@@ -373,14 +339,11 @@
                                 <td className="px-6 py-4 text-sm font-mono text-slate-500">{t.date}</td>
                                 <td className="px-6 py-4 font-bold text-slate-800">{t.description}</td>
                                 <td className="px-6 py-4"><span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md font-medium">{t.cat}</span></td>
-                                <td className={`px-6 py-4 text-right font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>
-                                    {t.type==='income'?'+':'-'}{t.amount.toLocaleString()} ₴
-                                </td>
+                                <td className={`px-6 py-4 text-right font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>{t.type==='income'?'+':'-'}{t.amount.toLocaleString()} ₴</td>
                             </tr>
                         ))}
                     </tbody>
-                </table>
-                }
+                </table>}
             </div>
         </div>
     );
@@ -393,39 +356,45 @@
             if(!settings.monoKey) return alert("Спочатку введіть X-Token!");
             setIsLoadingAccs(true);
             try {
-                // Fetch client info via proxy
                 const url = `https://corsproxy.io/?https://api.monobank.ua/personal/client-info`;
                 const res = await fetch(url, { headers: { 'X-Token': settings.monoKey } });
                 const data = await res.json();
-                
                 if(data.accounts) {
                     setAccounts(data.accounts);
-                    alert("Рахунки завантажено! Оберіть потрібний зі списку нижче.");
-                } else {
-                    alert("Не вдалося отримати рахунки. Перевірте токен.");
-                }
-            } catch (e) {
-                console.error(e);
-                alert("Помилка при запиті рахунків.");
-            }
+                    alert("Рахунки завантажено! Оберіть потрібний зі списку.");
+                } else alert("Не вдалося отримати рахунки.");
+            } catch (e) { alert("Помилка при запиті."); }
             setIsLoadingAccs(false);
+        };
+
+        const deleteAllTransactions = async () => {
+            if (!confirm("УВАГА! Це видалить ВСІ транзакції з бази даних. Цю дію неможливо скасувати. Ви впевнені?")) return;
+            try {
+                const q = query(collection(db, "transactions"));
+                const snapshot = await getDocs(q);
+                // Simple loop delete since batch is limited to 500
+                for (const doc of snapshot.docs) {
+                    await deleteDoc(doc.ref);
+                }
+                alert("Базу даних повністю очищено. Тепер ви можете синхронізувати правильний рахунок.");
+            } catch (e) {
+                alert("Помилка при видаленні: " + e.message);
+            }
         };
 
         return (
             <div className="max-w-3xl mx-auto animate-fade-in space-y-6">
                 <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-                    <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Icon name="link"/> Банківські інтеграції</h2>
+                    <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Icon name="link"/> Інтеграції</h2>
                     
-                    {/* MONO SECTION */}
                     <div className="mb-8 border-b border-slate-100 pb-8">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center shadow-lg"><div className="w-8 h-8 logo-mono"></div></div>
                             <div><h3 className="font-bold text-lg">Monobank</h3><p className="text-xs text-slate-400">Personal API</p></div>
                         </div>
-
                         <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-4">
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">1. Введіть X-Token</label>
+                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">1. X-Token</label>
                                 <div className="flex gap-2">
                                     <input type="password" value={settings.monoKey} onChange={e=>setSettings({...settings, monoKey:e.target.value})} className="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-brand-500" placeholder="Вставте токен..." />
                                     <button onClick={fetchMonoAccounts} disabled={isLoadingAccs} className="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold transition">
@@ -433,29 +402,18 @@
                                     </button>
                                 </div>
                             </div>
-
-                            {/* ACCOUNT SELECTOR (ОНОВЛЕНО) */}
                             <div>
-                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">2. Оберіть конкретний рахунок</label>
-                                <select 
-                                    value={settings.monoAccountId} 
-                                    onChange={e=>setSettings({...settings, monoAccountId:e.target.value})}
-                                    className={`w-full border rounded-lg px-4 py-2 text-sm outline-none bg-white ${!settings.monoAccountId ? 'border-red-300 text-red-500 font-bold' : 'border-slate-200 focus:border-brand-500'}`}
-                                >
-                                    <option value="" disabled>-- Натисніть, щоб обрати рахунок --</option>
-                                    {accounts.length > 0 ? accounts.map(acc => (
-                                        <option key={acc.id} value={acc.id}>
-                                            {acc.type.toUpperCase()} ({acc.currencyCode === 980 ? 'UAH' : 'FX'}) - Баланс: {(acc.balance/100).toLocaleString()}
-                                        </option>
-                                    )) : <option value="" disabled>Спочатку натисніть "Отримати рахунки"</option>}
+                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">2. Рахунок для синхронізації</label>
+                                <select value={settings.monoAccountId} onChange={e=>setSettings({...settings, monoAccountId:e.target.value})} className={`w-full border rounded-lg px-4 py-2 text-sm outline-none bg-white ${!settings.monoAccountId ? 'border-red-300 text-red-500 font-bold' : 'border-slate-200 focus:border-brand-500'}`}>
+                                    <option value="" disabled>-- Оберіть рахунок --</option>
+                                    {accounts.map(acc => (
+                                        <option key={acc.id} value={acc.id}>{acc.type.toUpperCase()} ({acc.currencyCode === 980 ? 'UAH' : 'FX'}) - {acc.balance/100}</option>
+                                    ))}
                                 </select>
-                                {!settings.monoAccountId && <p className="text-xs text-red-500 mt-1 font-bold">Обов'язково оберіть рахунок!</p>}
-                                {settings.monoAccountId && <p className="text-[10px] text-slate-400 mt-1">Обраний ID: {settings.monoAccountId.substring(0, 15)}...</p>}
                             </div>
                         </div>
                     </div>
 
-                    {/* NOVA SECTION */}
                     <div className="mb-8">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center shadow-sm"><div className="w-10 h-10 logo-nova"></div></div>
@@ -468,13 +426,17 @@
                     </div>
 
                     <div className="flex gap-4 pt-2">
-                        <button onClick={()=>saveSettings(settings)} className="flex-1 bg-slate-900 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-800 transition flex items-center justify-center gap-2">
-                            <Icon name="save" size={18}/> 3. Зберегти
-                        </button>
-                        <button onClick={syncMono} disabled={!settings.monoAccountId} className="flex-1 bg-brand-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-brand-600 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <Icon name="refresh-cw" size={18}/> 4. Синхронізувати
-                        </button>
+                        <button onClick={()=>saveSettings(settings)} className="flex-1 bg-slate-900 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-800 transition flex items-center justify-center gap-2"><Icon name="save" size={18}/> 3. Зберегти</button>
+                        <button onClick={syncMono} disabled={!settings.monoAccountId} className="flex-1 bg-brand-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-brand-600 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><Icon name="refresh-cw" size={18}/> 4. Синхронізувати</button>
                     </div>
+                </div>
+
+                <div className="bg-red-50 p-8 rounded-3xl shadow-sm border border-red-100 mt-8">
+                    <h3 className="text-red-700 font-bold mb-2 flex items-center gap-2"><Icon name="alert-triangle"/> Небезпечна зона</h3>
+                    <p className="text-xs text-red-600 mb-4">Якщо ви завантажили зайві транзакції з інших карток, натисніть цю кнопку, щоб очистити базу і почати заново.</p>
+                    <button onClick={deleteAllTransactions} className="w-full border-2 border-red-200 text-red-600 hover:bg-red-100 px-6 py-3 rounded-xl font-bold transition">
+                        Видалити всі транзакції (Очистити базу)
+                    </button>
                 </div>
             </div>
         );
@@ -491,11 +453,7 @@
                     {transactions.map(t => (
                         <tr key={t.id} className="table-row-hover">
                             <td className="px-6 py-4 text-sm font-mono text-slate-500">{t.date}</td>
-                            <td className="px-6 py-4">
-                                {t.isDividend ? <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-bold">ДИВ</span> : 
-                                (t.type==='income' ? <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs font-bold">ВХІД</span> : 
-                                <span className="px-2 py-1 rounded bg-orange-100 text-orange-700 text-xs font-bold">ВИХІД</span>)}
-                            </td>
+                            <td className="px-6 py-4">{t.isDividend ? <span className="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-bold">ДИВ</span> : (t.type==='income' ? <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-700 text-xs font-bold">ВХІД</span> : <span className="px-2 py-1 rounded bg-orange-100 text-orange-700 text-xs font-bold">ВИХІД</span>)}</td>
                             <td className="px-6 py-4 font-bold text-slate-800">{t.description}</td>
                             <td className="px-6 py-4"><span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded-md font-medium">{t.cat}</span></td>
                             <td className="px-6 py-4 text-sm text-slate-500">{t.source}</td>
@@ -504,8 +462,7 @@
                         </tr>
                     ))}
                 </tbody>
-            </table>
-            }
+            </table>}
         </div>
     );
 
@@ -556,37 +513,25 @@
 
     const TransactionModal = ({ type, close }) => {
         const [form, setForm] = useState({ amount: '', desc: '', cat: 'Інше', source: 'Monobank ФОП' });
-        
         const submit = async () => {
             if(!form.amount) return;
             const isDiv = type === 'dividend';
             let cat = form.cat;
-            
             if(!isDiv && form.cat === 'Інше') {
                 const desc = form.desc.toLowerCase();
                 if(desc.includes('nova')) cat = 'Логістика';
                 if(desc.includes('meta')) cat = 'Реклама';
             } else if(isDiv) cat = 'Дивіденди';
-
             try {
                 await addDoc(collection(db, "transactions"), {
-                    amount: Number(form.amount),
-                    description: form.desc || (isDiv?'Виплата дивідендів':''),
-                    cat, source: form.source,
-                    type: (type==='dividend' || type==='expense') ? 'expense' : 'income',
-                    isDividend: isDiv,
-                    date: new Date().toLocaleDateString('uk-UA'),
-                    createdAt: Date.now()
+                    amount: Number(form.amount), description: form.desc || (isDiv?'Виплата дивідендів':''), cat, source: form.source, type: (type==='dividend' || type==='expense') ? 'expense' : 'income', isDividend: isDiv, date: new Date().toLocaleDateString('uk-UA'), createdAt: Date.now()
                 });
                 close();
             } catch (e) { alert("Помилка збереження: " + e.message); }
         };
-
         const title = type==='dividend' ? 'Виплата дивідендів' : (type==='income' ? 'Новий дохід' : 'Нова витрата');
         const theme = type==='dividend' ? 'bg-slate-900' : (type==='income' ? 'bg-emerald-500' : 'bg-brand-500');
-        
         const cats = type==='income' ? ['Продажі', 'Кешбек', 'Повернення', 'Інше'] : ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Інше'];
-
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={close}></div>
