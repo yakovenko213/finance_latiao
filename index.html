@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao Finance | Stable v12.1</title>
+    <title>Latiao Finance | Team Stable v12.2</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -69,13 +69,17 @@
     const { useState, useEffect, useMemo } = React;
 
     const Icon = ({ name, size = 18, className }) => {
-        useEffect(() => { try { lucide.createIcons(); } catch(e){} }, [name]);
+        useEffect(() => { 
+            try { 
+                if (window.lucide) window.lucide.createIcons(); 
+            } catch(e){} 
+        }, [name]);
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
     };
 
     const DEFAULT_CATEGORIES = {
         income: ['Продажі', 'Кешбек', 'Повернення', 'Інше'],
-        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Інше']
+        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Знижки', 'Інше']
     };
 
     const ALL_VIEWS = [
@@ -106,12 +110,12 @@
         useEffect(() => {
             const unsub = onAuthStateChanged(auth, async (u) => {
                 if (u) {
-                    // Admin
+                    // Admin Logged In
                     setCurrentUser({ uid: u.uid, email: u.email, role: 'admin', permissions: ['all'] });
                     setView('dashboard');
                     loadData();
                 } else {
-                    // Check Manager
+                    // Check for Manager in LocalStorage
                     try {
                         const storedManager = localStorage.getItem('latiao_manager');
                         if (storedManager) {
@@ -168,14 +172,21 @@
             const totalCash = transactions.reduce((s,t) => t.type==='income' ? s+(Number(t.amount)||0) : s-(Number(t.amount)||0), 0);
             const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s+(Number(t.amount)||0), 0);
             const net = revenue - totalExpense;
+            
+            const operationalCashFlow = revenue - totalExpense; 
+            const financingCashFlow = -dividends; 
+            const netCashChange = operationalCashFlow + financingCashFlow;
+
             const balances = { mono: 0, nova: 0, cash: 0 };
             transactions.forEach(t => {
                 const src = t.source || '';
                 const key = src.includes('Monobank') ? 'mono' : (src.includes('Nova') ? 'nova' : 'cash');
                 if(balances[key] !== undefined) balances[key] += (t.type==='income' ? (Number(t.amount)||0) : -(Number(t.amount)||0));
             });
-            const runway = totalExpense > 0 ? (totalCash / (totalExpense / 30)).toFixed(0) : "∞";
-            return { revenue, cogs, opex, net, totalCash, dividends, balances, margin: revenue ? ((net/revenue)*100).toFixed(0) : 0, totalExpense, runway, operationalCashFlow: revenue - totalExpense, financingCashFlow: -dividends, netCashChange: (revenue - totalExpense) - dividends };
+            const dailyBurn = totalExpense > 0 ? totalExpense / 30 : 0;
+            const runway = dailyBurn > 0 ? (totalCash / dailyBurn).toFixed(0) : "∞";
+            
+            return { revenue, cogs, opex, net, totalCash, dividends, balances, margin: revenue ? ((net/revenue)*100).toFixed(0) : 0, totalExpense, runway, operationalCashFlow, financingCashFlow, netCashChange };
         }, [transactions]);
 
         // --- AUTH ---
@@ -221,7 +232,6 @@
             setView('auth');
         };
 
-        // --- PERMISSION CHECKER (SAFE) ---
         const canAccess = (viewId) => {
             if (!currentUser) return false;
             if (currentUser.role === 'admin') return true;
@@ -250,8 +260,10 @@
                     const desc = (item.description||'').toLowerCase();
                     if(desc.includes('nova')) cat='Логістика'; 
                     else if(desc.includes('atb')||desc.includes('silpo')) cat='Закупівля (COGS)';
+                    
                     const catList = item.amount>0 ? categories.income : categories.expense;
                     if(!catList.includes(cat) && cat!=='Логістика' && cat!=='Закупівля (COGS)') cat='Інше';
+
                     batch.set(doc(collection(db,"transactions")), {
                         amount: Math.abs(item.amount/100), description: item.description, cat, source: 'Monobank ФОП',
                         type: item.amount>0?'income':'expense', isDividend: false, date: new Date(item.time*1000).toLocaleDateString('uk-UA'), createdAt: item.time*1000, bankId: item.id
@@ -283,7 +295,7 @@
                         <input type="password" placeholder="Пароль" value={pass} onChange={e=>setPass(e.target.value)} className="w-full p-3 rounded-xl mb-6 bg-slate-800 text-white border border-slate-700 outline-none focus:border-brand-500 transition"/>
                         <button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold transition shadow-lg">{loading?'Вхід...':'Увійти'}</button>
                     </form>
-                    <button onClick={()=> { localStorage.removeItem('latiao_manager'); window.location.reload(); }} className="text-xs text-slate-500 mt-4 underline">Скинути сесію (Якщо глючить)</button>
+                    <button onClick={()=> { localStorage.removeItem('latiao_manager'); window.location.reload(); }} className="text-xs text-slate-500 mt-4 underline hover:text-white cursor-pointer">Скинути сесію (Якщо глючить)</button>
                 </div>
             </div>
         );
@@ -295,9 +307,11 @@
                         <div className="w-8 h-8 bg-brand-500 rounded-lg text-white flex items-center justify-center shadow-md">L</div> 
                         Latiao
                     </div>
+                    
                     <div className="px-6 mb-2">
                         <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Меню</span>
                     </div>
+
                     <nav className="flex-1 px-4 space-y-1">
                         {ALL_VIEWS.filter(v => canAccess(v.id) && v.id !== 'settings' && v.id !== 'managers').map(item => (
                             <button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view===item.id ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
@@ -305,6 +319,7 @@
                             </button>
                         ))}
                     </nav>
+                    
                     <div className="p-4 border-t space-y-1">
                         {canAccess('managers') && (
                             <button onClick={()=>setView('managers')} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view==='managers' ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
@@ -355,7 +370,103 @@
         );
     };
 
-    // --- SUB COMPONENTS ---
+    // --- SUB COMPONENTS (EXPANDED TO PREVENT ERRORS) ---
+    
+    const DashboardView = ({ metrics, transactions, setView }) => {
+        const isHealthy = metrics.margin > 20;
+        const healthStatus = isHealthy ? "Чудовий" : (metrics.margin > 0 ? "Нормальний" : "Критичний");
+        const healthColor = isHealthy ? "text-emerald-500" : (metrics.margin > 0 ? "text-orange-500" : "text-red-500");
+        return (
+            <div className="space-y-8 animate-fade-in">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden group">
+                        <div className="absolute right-[-20px] top-[-20px] opacity-10 group-hover:scale-110 transition-transform"><Icon name="wallet" size={140}/></div>
+                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Гроші (Cash)</div>
+                        <div className="text-3xl font-mono font-bold">{metrics.totalCash.toLocaleString()} ₴</div>
+                        <p className="text-xs text-slate-500 mt-2">Доступні кошти бізнесу</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Прибуток</div>
+                        <div className={`text-3xl font-mono font-bold ${metrics.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{metrics.net.toLocaleString()} ₴</div>
+                        <div className={`mt-2 text-xs font-bold inline-block px-2 py-1 rounded bg-slate-50 ${healthColor}`}>Рентабельність: {metrics.margin}%</div>
+                    </div>
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Запас ходу</div>
+                        <div className="text-3xl font-mono font-bold text-brand-500">{metrics.runway} днів</div>
+                        <p className="text-xs text-slate-400 mt-2">Скільки проживе бізнес без нових продажів</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center">
+                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Здоров'я</div>
+                        <div className={`text-xl font-bold ${healthColor} flex items-center gap-2`}>
+                            {isHealthy ? <Icon name="check-circle" /> : <Icon name="alert-circle" />} {healthStatus}
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6">
+                    <h3 className="font-bold text-lg text-slate-800 mb-4">Останні операції</h3>
+                    {transactions.slice(0, 5).map(t => (
+                        <div key={t.id} className="flex justify-between py-3 border-b border-slate-100 last:border-0">
+                            <div><div className="font-bold text-sm">{t.description}</div><div className="text-xs text-slate-400">{t.date}</div></div>
+                            <div className={`font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>{t.type==='income'?'+':'-'}{(Number(t.amount)||0).toLocaleString()} ₴</div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    const PnLView = ({ metrics, transactions }) => {
+        const opExItems = transactions.filter(t => t.type === 'expense' && !t.isDividend && t.cat !== 'Закупівля (COGS)').reduce((acc, t) => {
+            const ex = acc.find(i => i.cat === t.cat); 
+            if(ex) ex.val+=Number(t.amount); else acc.push({cat:t.cat, val:Number(t.amount)}); 
+            return acc;
+        }, []).sort((a,b)=>b.val-a.val);
+        const getPct = (val) => metrics.revenue ? ((val/metrics.revenue)*100).toFixed(1) : 0;
+        
+        return (
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 animate-fade-in max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold mb-6">P&L Звіт</h2>
+                <div className="space-y-4">
+                    <div className="flex justify-between p-3 bg-emerald-50 rounded-xl"><span className="font-bold text-emerald-800">Виручка</span><span className="font-bold text-emerald-700">+{metrics.revenue.toLocaleString()}</span></div>
+                    <div className="flex justify-between px-3 text-slate-500"><span>(-) Собівартість</span><span>-{metrics.cogs.toLocaleString()}</span></div>
+                    <div className="flex justify-between px-3 font-bold text-blue-900 border-t pt-2"><span>= Валовий</span><span>{(metrics.revenue - metrics.cogs).toLocaleString()}</span></div>
+                    <div className="flex justify-between px-3 text-red-500"><span>(-) OpEx</span><span>-{metrics.opex.toLocaleString()}</span></div>
+                    <div className="flex justify-between px-3 text-xl font-bold border-t-2 border-slate-900 pt-4"><span>= Чистий Прибуток</span><span>{metrics.net.toLocaleString()}</span></div>
+                </div>
+            </div>
+        );
+    };
+
+    const CashFlowView = ({ metrics }) => (
+        <div className="max-w-4xl mx-auto animate-fade-in space-y-6">
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                <h2 className="text-xl font-bold mb-4">Cash Flow</h2>
+                <div className="space-y-4">
+                    <div className="flex justify-between"><span>Операційний потік</span><span className="font-bold">{metrics.operationalCashFlow.toLocaleString()} ₴</span></div>
+                    <div className="flex justify-between text-purple-600"><span>Фінансовий (Дивіденди)</span><span className="font-bold">{metrics.financingCashFlow.toLocaleString()} ₴</span></div>
+                    <div className="pt-4 border-t font-bold text-lg flex justify-between"><span>Чистий рух</span><span>{metrics.netCashChange.toLocaleString()} ₴</span></div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const DividendsView = ({ metrics, transactions, setModalType }) => (
+        <div className="max-w-3xl mx-auto animate-fade-in space-y-6">
+            <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl">
+                <h2 className="text-2xl font-bold mb-2">Дивіденди</h2>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div><div className="text-xs text-slate-400">Всього прибутку</div><div className="text-xl font-bold text-emerald-400">{metrics.net.toLocaleString()}</div></div>
+                    <div><div className="text-xs text-slate-400">Виведено</div><div className="text-xl font-bold text-purple-400">{metrics.dividends.toLocaleString()}</div></div>
+                </div>
+                <button onClick={()=>setModalType('dividend')} className="w-full bg-white text-slate-900 py-3 rounded-xl font-bold">Зафіксувати виплату</button>
+            </div>
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                {transactions.filter(t=>t.isDividend).length === 0 ? <div className="text-center text-slate-400">Історія порожня</div> :
+                transactions.filter(t=>t.isDividend).map(t => (<div key={t.id} className="flex justify-between py-2 border-b last:border-0"><span>{t.date}</span><span className="font-bold text-purple-600">-{t.amount}</span></div>))}
+            </div>
+        </div>
+    );
+
     const ManagersView = ({ db }) => {
         const [managers, setManagers] = useState([]);
         const [showModal, setShowModal] = useState(false);
@@ -366,7 +477,7 @@
         }, []);
         const deleteManager = async (id) => { if(confirm("Видалити менеджера?")) await deleteDoc(doc(db, "managers", id)); };
         return (
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
                 <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                     <div><h2 className="text-xl font-bold text-slate-800">Команда</h2><p className="text-sm text-slate-400">Управління доступом</p></div>
                     <button onClick={()=>setShowModal(true)} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm">+ Додати</button>
@@ -375,7 +486,10 @@
                     {managers.map(m => (
                         <div key={m.id} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative group">
                             <button onClick={()=>deleteManager(m.id)} className="absolute top-4 right-4 text-slate-300 hover:text-red-500"><Icon name="trash-2" size={16}/></button>
-                            <div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xl">{m.name?.[0]||'U'}</div><div><div className="font-bold text-lg">{m.name}</div><div className="text-xs text-slate-400">{m.email}</div></div></div>
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xl">{m.name?.[0]||'U'}</div>
+                                <div><div className="font-bold text-lg">{m.name}</div><div className="text-xs text-slate-400">{m.email}</div></div>
+                            </div>
                             <div className="flex flex-wrap gap-2">{(m.permissions||[]).map(p => <span key={p} className="text-[10px] bg-slate-50 border px-2 py-1 rounded uppercase font-bold text-slate-500">{ALL_VIEWS.find(v=>v.id===p)?.label || p}</span>)}</div>
                             <div className="mt-4 text-xs text-slate-300">Пароль: {m.password}</div>
                         </div>
@@ -410,39 +524,6 @@
             </div>
         );
     };
-
-    const DashboardView = ({ metrics, transactions, setView }) => {
-        const isHealthy = metrics.margin > 20;
-        const healthStatus = isHealthy ? "Чудовий" : (metrics.margin > 0 ? "Нормальний" : "Критичний");
-        const healthColor = isHealthy ? "text-emerald-500" : (metrics.margin > 0 ? "text-orange-500" : "text-red-500");
-        return (
-            <div className="space-y-8 animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden"><div className="text-slate-400 text-xs font-bold uppercase mb-2">Гроші (Cash)</div><div className="text-3xl font-mono font-bold">{metrics.totalCash.toLocaleString()} ₴</div></div>
-                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm"><div className="text-slate-400 text-xs font-bold uppercase mb-2">Прибуток</div><div className={`text-3xl font-mono font-bold ${metrics.net>=0?'text-emerald-600':'text-red-600'}`}>{metrics.net.toLocaleString()} ₴</div><div className={`mt-2 text-xs font-bold inline-block px-2 py-1 rounded bg-slate-50 ${healthColor}`}>Рентабельність: {metrics.margin}%</div></div>
-                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm"><div className="text-slate-400 text-xs font-bold uppercase mb-2">Запас ходу</div><div className="text-3xl font-mono font-bold text-brand-500">{metrics.runway} днів</div></div>
-                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm"><div className="text-slate-400 text-xs font-bold uppercase mb-2">Здоров'я</div><div className={`text-xl font-bold ${healthColor} flex items-center gap-2`}>{isHealthy ? <Icon name="check-circle" /> : <Icon name="alert-circle" />}{healthStatus}</div></div>
-                </div>
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6"><h3 className="font-bold text-lg text-slate-800 mb-4">Останні операції</h3>{transactions.slice(0, 5).map(t => (<div key={t.id} className="flex justify-between py-3 border-b border-slate-100 last:border-0"><div><div className="font-bold text-sm">{t.description}</div><div className="text-xs text-slate-400">{t.date}</div></div><div className={`font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>{t.type==='income'?'+':'-'}{(Number(t.amount)||0).toLocaleString()} ₴</div></div>))}</div>
-            </div>
-        );
-    };
-
-    const PnLView = ({ metrics, transactions }) => {
-        const opExItems = transactions.filter(t => t.type === 'expense' && !t.isDividend && t.cat !== 'Закупівля (COGS)').reduce((acc, t) => {const ex = acc.find(i => i.cat === t.cat); if(ex) ex.val+=Number(t.amount); else acc.push({cat:t.cat, val:Number(t.amount)}); return acc;}, []).sort((a,b)=>b.val-a.val);
-        const getPct = (val) => metrics.revenue ? ((val/metrics.revenue)*100).toFixed(1) : 0;
-        return (
-            <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 animate-fade-in max-w-4xl mx-auto"><h2 className="text-2xl font-bold mb-6">P&L Звіт</h2><div className="space-y-4"><div className="flex justify-between p-3 bg-emerald-50 rounded-xl"><span className="font-bold text-emerald-800">Виручка</span><span className="font-bold text-emerald-700">+{metrics.revenue.toLocaleString()}</span></div><div className="flex justify-between px-3 text-slate-500"><span>(-) Собівартість</span><span>-{metrics.cogs.toLocaleString()}</span></div><div className="flex justify-between px-3 font-bold text-blue-900 border-t pt-2"><span>= Валовий</span><span>{(metrics.revenue - metrics.cogs).toLocaleString()}</span></div><div className="flex justify-between px-3 text-red-500"><span>(-) OpEx</span><span>-{metrics.opex.toLocaleString()}</span></div><div className="flex justify-between px-3 text-xl font-bold border-t-2 border-slate-900 pt-4"><span>= Чистий Прибуток</span><span>{metrics.net.toLocaleString()}</span></div></div></div>
-        );
-    };
-
-    const CashFlowView = ({ metrics }) => (
-        <div className="max-w-4xl mx-auto animate-fade-in space-y-6"><div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100"><h2 className="text-xl font-bold mb-4">Cash Flow</h2><div className="space-y-4"><div className="flex justify-between"><span>Операційний потік</span><span className="font-bold">{metrics.operationalCashFlow.toLocaleString()} ₴</span></div><div className="flex justify-between text-purple-600"><span>Фінансовий (Дивіденди)</span><span className="font-bold">{metrics.financingCashFlow.toLocaleString()} ₴</span></div><div className="pt-4 border-t font-bold text-lg flex justify-between"><span>Чистий рух</span><span>{metrics.netCashChange.toLocaleString()} ₴</span></div></div></div></div>
-    );
-
-    const DividendsView = ({ metrics, transactions, setModalType }) => (
-        <div className="max-w-3xl mx-auto animate-fade-in space-y-6"><div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl"><h2 className="text-2xl font-bold mb-2">Дивіденди</h2><div className="grid grid-cols-2 gap-4 mb-6"><div><div className="text-xs text-slate-400">Всього прибутку</div><div className="text-xl font-bold text-emerald-400">{metrics.net.toLocaleString()}</div></div><div><div className="text-xs text-slate-400">Виведено</div><div className="text-xl font-bold text-purple-400">{metrics.dividends.toLocaleString()}</div></div></div><button onClick={()=>setModalType('dividend')} className="w-full bg-white text-slate-900 py-3 rounded-xl font-bold">Зафіксувати виплату</button></div><div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">{transactions.filter(t=>t.isDividend).map(t => (<div key={t.id} className="flex justify-between py-2 border-b last:border-0"><span>{t.date}</span><span className="font-bold text-purple-600">-{t.amount}</span></div>))}</div></div>
-    );
 
     const OpsView = ({ transactions, deleteTx, syncMono, categories }) => {
         const [isSyncing, setIsSyncing] = useState(false);
