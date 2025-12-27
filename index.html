@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html lang="uk" class="bg-slate-50/50">
+<html lang="uk" class="bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Latiao Finance | Security Update v13.2</title>
+    <title>Latiao Finance | Educational Edition v13.3</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#ffffff">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/732/732220.png">
+    <meta name="application-name" content="Latiao Fin">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://cdn-icons-png.flaticon.com/512/2382/2382461.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2382/2382461.png">
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -28,7 +30,6 @@
                     },
                     boxShadow: {
                         'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03)',
-                        'glow-brand': '0 0 20px -5px rgba(255, 87, 34, 0.4)'
                     },
                     screens: { 'xs': '375px' }
                 }
@@ -37,28 +38,24 @@
     </script>
     <style>
         body { color: #1e293b; -webkit-tap-highlight-color: transparent; }
-        main { background-image: radial-gradient(circle at center, #f1f5f9 1px, transparent 1px); background-size: 40px 40px; }
+        /* Clean background pattern */
+        main { background-image: radial-gradient(#e2e8f0 1px, transparent 1px); background-size: 24px 24px; }
         
         .sidebar-link { transition: all 0.2s ease-in-out; }
-        .sidebar-link.active { background: linear-gradient(135deg, #FF5722 0%, #ea580c 100%); color: white; box-shadow: 0 8px 16px -4px rgba(255, 87, 34, 0.3); border-radius: 16px; }
-        .sidebar-link:hover:not(.active) { background: #fff1ec; color: #ea580c; border-radius: 16px; }
+        .sidebar-link.active { background: #FF5722; color: white; box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3); border-radius: 12px; }
+        .sidebar-link:hover:not(.active) { background: #fff1ec; color: #ea580c; border-radius: 12px; }
         
-        .card-modern { background: white; border-radius: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05); transition: transform 0.2s, box-shadow 0.2s; }
+        /* Educational Cards Style */
+        .card-edu { background: white; border-radius: 20px; border: 1px solid #e2e8f0; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .info-box { border-left: 4px solid; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
         
-        .table-row-modern { transition: all 0.15s; border-radius: 12px; }
-        .table-row-modern td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
-        .table-row-modern td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
-        
-        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); scale: 0.99; } to { opacity: 1; transform: translateY(0); scale: 1; } }
-        
-        .logo-mono { background-image: url('https://multicast.com.ua/wp-content/uploads/2024/04/monobank-logo.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
-        .logo-nova { background-image: url('https://novapay.ua/wp-content/themes/novapay/assets/img/logo.svg'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+        .table-row-hover:hover { background-color: #f8fafc; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-        .pt-safe { padding-top: env(safe-area-inset-top); }
     </style>
 </head>
 <body>
@@ -86,7 +83,6 @@
 
     const { useState, useEffect, useMemo } = React;
 
-    // --- ICONS & HELPERS ---
     const Icon = ({ name, size = 18, className }) => {
         useEffect(() => { try { if(window.lucide) window.lucide.createIcons(); } catch(e){} }, [name]);
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
@@ -98,89 +94,110 @@
     };
 
     const ALL_VIEWS = [
-        {id:'dashboard', label:'Огляд', icon:'layout-grid', mobile: true},
-        {id:'ops', label:'Операції', icon:'list-checks', mobile: true},
-        {id:'pnl', label:'P&L', icon:'pie-chart', mobile: true},
+        {id:'dashboard', label:'Огляд', icon:'layout-dashboard', mobile: true},
+        {id:'ops', label:'Операції', icon:'list', mobile: true},
+        {id:'pnl', label:'P&L Звіт', icon:'pie-chart', mobile: true},
         {id:'cashflow', label:'CashFlow', icon:'banknote', mobile: false},
         {id:'dividends', label:'Дивіденди', icon:'gem', mobile: false},
-        {id:'managers', label:'Команда', icon:'users-round', mobile: false},
-        {id:'settings', label:'Налаштування', icon:'sliders-horizontal', mobile: true}
+        {id:'managers', label:'Команда', icon:'users', mobile: false},
+        {id:'settings', label:'Налаштування', icon:'settings', mobile: true}
     ];
 
     // --- VIEW COMPONENTS ---
 
     const DashboardView = ({ metrics, transactions, setView }) => {
         const isHealthy = metrics.margin > 20;
-        const healthStatus = isHealthy ? "Чудово" : (metrics.margin > 0 ? "Норма" : "Критично");
-        const healthColor = isHealthy ? "text-emerald-500" : (metrics.margin > 0 ? "text-orange-500" : "text-red-500");
+        const healthStatus = isHealthy ? "Чудовий" : (metrics.margin > 0 ? "Нормальний" : "Критичний");
+        const healthColor = isHealthy ? "text-emerald-600" : (metrics.margin > 0 ? "text-orange-600" : "text-red-600");
 
         return (
-            <div className="space-y-6 animate-fade-in pb-20 md:pb-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-slate-850 to-slate-900 text-white p-6 rounded-[24px] shadow-2xl relative overflow-hidden group border border-slate-800">
-                        <div className="absolute right-[-30px] top-[-30px] opacity-[0.08]"><Icon name="wallet" size={140}/></div>
-                        <div className="relative z-10">
-                            <div className="text-slate-300 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><Icon name="wallet" size={14} className="text-brand-500"/> Гроші</div>
-                            <div className="text-3xl font-mono font-bold tracking-tight">{metrics.totalCash.toLocaleString()} <span className="text-xl text-slate-400">₴</span></div>
-                        </div>
+            <div className="space-y-6 animate-fade-in pb-24 md:pb-0">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden group">
+                        <div className="absolute right-[-20px] top-[-20px] opacity-10 group-hover:scale-110 transition-transform"><Icon name="wallet" size={140}/></div>
+                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Гроші в касі (Cash)</div>
+                        <div className="text-3xl font-mono font-bold">{metrics.totalCash.toLocaleString()} ₴</div>
+                        <p className="text-xs text-slate-500 mt-2">Доступний капітал</p>
                     </div>
-                    <div className="card-modern p-6 relative overflow-hidden border-t-4 border-t-emerald-500">
-                        <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Чистий Прибуток</div>
-                        <div className={`text-3xl font-mono font-bold tracking-tight ${metrics.net >= 0 ? 'text-slate-900' : 'text-red-600'}`}>
-                             {metrics.net > 0 ? '+' : ''}{metrics.net.toLocaleString()} <span className="text-xl text-slate-400">₴</span>
-                        </div>
-                         <div className={`mt-2 text-xs font-bold inline-flex items-center gap-1 px-2 py-1 rounded-full ${metrics.net >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                            Маржа: {metrics.margin}%
-                        </div>
+
+                    <div className="card-edu p-6 border-l-4 border-l-emerald-500">
+                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Чистий Прибуток</div>
+                        <div className={`text-3xl font-mono font-bold ${metrics.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{metrics.net.toLocaleString()} ₴</div>
+                        <div className="mt-2 text-xs font-bold bg-slate-50 inline-block px-2 py-1 rounded">Маржа: {metrics.margin}%</div>
                     </div>
-                    <div className="card-modern p-6 border-t-4 border-t-brand-500 relative overflow-hidden">
-                        <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Запас ходу</div>
-                        <div className="text-3xl font-mono font-bold text-brand-600 tracking-tight">{metrics.runway} <span className="text-lg text-slate-500 font-sans font-bold">днів</span></div>
+
+                    <div className="card-edu p-6">
+                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Запас ходу</div>
+                        <div className="text-3xl font-mono font-bold text-brand-500">{metrics.runway} днів</div>
+                        <p className="text-xs text-slate-400 mt-2">Без нових продажів</p>
                     </div>
-                    <div className="card-modern p-6 relative overflow-hidden border-t-4 border-t-blue-500">
-                         <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Основна витрата</div>
-                         <div className="text-xl font-bold text-slate-800 line-clamp-1">{metrics.topExpense.name}</div>
-                         <div className="text-sm font-mono text-red-500 font-bold mt-1">-{metrics.topExpense.val.toLocaleString()} ₴</div>
+
+                    <div className="card-edu p-6 flex flex-col justify-center items-center text-center">
+                        <div className="text-slate-400 text-xs font-bold uppercase mb-2">Фінансове здоров'я</div>
+                        <div className={`text-xl font-bold ${healthColor} flex items-center gap-2`}>
+                            {isHealthy ? <Icon name="check-circle" /> : <Icon name="alert-circle" />}
+                            {healthStatus}
+                        </div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                     <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                         <h3 className="font-bold text-lg mb-4 text-slate-800 flex items-center gap-2"><Icon name="credit-card"/> Гаманці</h3>
+                    <div className="card-edu p-6">
+                        <h3 className="font-bold text-lg mb-4 text-slate-800">Структура гаманця</h3>
                         <div className="space-y-3">
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                <div className="flex items-center gap-3"><div className="w-8 h-8 logo-mono bg-white rounded-full shadow-sm"></div><span className="font-bold text-sm">Monobank</span></div>
+                             <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                                <span className="font-bold text-sm flex items-center gap-2"><div className="w-6 h-6 bg-black rounded-full text-white flex items-center justify-center text-[10px]">M</div> Monobank</span>
                                 <span className="font-mono font-bold">{metrics.balances.mono.toLocaleString()} ₴</span>
                             </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                <div className="flex items-center gap-3"><div className="w-8 h-8 logo-nova bg-white rounded-full shadow-sm"></div><span className="font-bold text-sm">NovaPay</span></div>
+                            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                                <span className="font-bold text-sm flex items-center gap-2"><div className="w-6 h-6 bg-red-500 rounded-full text-white flex items-center justify-center text-[10px]">N</div> NovaPay</span>
                                 <span className="font-mono font-bold">{metrics.balances.nova.toLocaleString()} ₴</span>
                             </div>
-                            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                <div className="flex items-center gap-3"><div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white shadow-sm"><Icon name="banknote" size={14}/></div><span className="font-bold text-sm">Готівка</span></div>
+                            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                                <span className="font-bold text-sm flex items-center gap-2"><div className="w-6 h-6 bg-green-500 rounded-full text-white flex items-center justify-center text-[10px]"><Icon name="banknote" size={12}/></div> Готівка</span>
                                 <span className="font-mono font-bold">{metrics.balances.cash.toLocaleString()} ₴</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="card-modern overflow-hidden flex flex-col justify-between">
-                         <div className="p-5 border-b border-slate-100 bg-slate-50/50">
-                             <h3 className="font-bold text-lg text-slate-800">Ключові метрики</h3>
-                         </div>
-                         <div className="p-6 grid grid-cols-2 gap-4">
-                             <div className="p-3 bg-brand-50 rounded-xl text-center">
-                                 <div className="text-xs text-brand-600 font-bold uppercase mb-1">Середній чек</div>
-                                 <div className="text-xl font-mono font-bold text-brand-700">{metrics.avgTicket.toLocaleString()} ₴</div>
-                             </div>
-                             <div className="p-3 bg-slate-50 rounded-xl text-center">
-                                 <div className="text-xs text-slate-500 font-bold uppercase mb-1">Всього витрат</div>
-                                 <div className="text-xl font-mono font-bold text-slate-700">{metrics.totalExpense.toLocaleString()} ₴</div>
-                             </div>
-                         </div>
-                         <div className="px-6 pb-6">
-                            <button onClick={()=>setView('pnl')} className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-slate-700 transition">Повний P&L звіт</button>
-                         </div>
+                    <div className="card-edu p-6 flex flex-col justify-between">
+                         <div>
+                            <h3 className="font-bold text-lg mb-4 text-slate-800">Аналітика</h3>
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="bg-orange-50 p-3 rounded-xl text-center">
+                                    <div className="text-xs text-orange-600 font-bold mb-1">Найбільша стаття витрат</div>
+                                    <div className="text-sm font-bold text-slate-700 truncate">{metrics.topExpense.name}</div>
+                                    <div className="text-xs text-slate-500">-{metrics.topExpense.val.toLocaleString()} ₴</div>
+                                </div>
+                                <div className="bg-emerald-50 p-3 rounded-xl text-center">
+                                    <div className="text-xs text-emerald-600 font-bold mb-1">Середній чек</div>
+                                    <div className="text-lg font-bold text-slate-700">{metrics.avgTicket.toLocaleString()} ₴</div>
+                                </div>
+                            </div>
+                        </div>
+                        <button onClick={()=>setView('pnl')} className="w-full py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-200">Детальний P&L звіт →</button>
                     </div>
+                </div>
+
+                <div className="card-edu overflow-hidden">
+                    <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <h3 className="font-bold text-slate-800">Останні операції</h3>
+                        <button onClick={()=>setView('ops')} className="text-xs font-bold text-brand-500">Всі операції</button>
+                    </div>
+                    {transactions.length === 0 ? <div className="p-8 text-center text-slate-400">Пусто</div> :
+                    <div className="divide-y divide-slate-100">
+                        {transactions.slice(0, 5).map(t => (
+                            <div key={t.id} className="p-4 flex justify-between items-center hover:bg-slate-50">
+                                <div>
+                                    <div className="font-bold text-sm text-slate-800">{t.description}</div>
+                                    <div className="text-xs text-slate-400">{t.date} • {t.cat}</div>
+                                </div>
+                                <div className={`font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>
+                                    {t.type==='income'?'+':'-'}{(Number(t.amount)||0).toLocaleString()}
+                                </div>
+                            </div>
+                        ))}
+                    </div>}
                 </div>
             </div>
         );
@@ -188,47 +205,60 @@
 
     const PnLView = ({ metrics, transactions }) => {
         const getPct = (val) => metrics.revenue ? ((val / metrics.revenue) * 100).toFixed(1) : 0;
-        const getExpPct = (val) => metrics.totalExpense ? ((val / metrics.totalExpense) * 100).toFixed(1) : 0;
-        const allExpenses = transactions.filter(t => t.type === 'expense' && !t.isDividend).reduce((acc, t) => { const existing = acc.find(i => i.cat === t.cat); if (existing) existing.val += Number(t.amount); else acc.push({ cat: t.cat, val: Number(t.amount) }); return acc; }, []).sort((a, b) => b.val - a.val);
+        const opExItems = transactions.filter(t => t.type === 'expense' && !t.isDividend && t.cat !== 'Закупівля (COGS)').reduce((acc, t) => { const existing = acc.find(i => i.cat === t.cat); if (existing) existing.val += Number(t.amount); else acc.push({ cat: t.cat, val: Number(t.amount) }); return acc; }, []).sort((a, b) => b.val - a.val);
 
         return (
-            <div className="space-y-6 animate-fade-in max-w-4xl mx-auto pb-20 md:pb-0">
-                <div className="card-modern p-6 bg-gradient-to-r from-emerald-50 to-white border-l-8 border-l-emerald-500">
-                    <div className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-1">Виручка (Revenue)</div>
+            <div className="space-y-6 animate-fade-in max-w-4xl mx-auto pb-24 md:pb-0">
+                <div className="info-box bg-blue-50 border-blue-200 text-blue-900">
+                    <h3 className="font-bold flex items-center gap-2 mb-2"><Icon name="info" size={18}/> Що таке P&L?</h3>
+                    <p className="text-sm">Це звіт про прибутки та збитки. Він показує, скільки бізнес реально заробив. <br/><b>Важливо:</b> Сюди не входять дивіденди, бо це розподіл прибутку, а не витрата.</p>
+                </div>
+
+                <div className="card-edu p-6 border-l-8 border-l-emerald-500">
+                    <div className="text-sm font-bold text-emerald-700 uppercase mb-1">Виручка (Total Revenue)</div>
                     <div className="text-4xl font-mono font-bold text-slate-900">+{metrics.revenue.toLocaleString()} ₴</div>
+                    <p className="text-xs text-slate-400 mt-1">Оборот "брудними"</p>
                 </div>
-                
+
                 <div className="grid md:grid-cols-2 gap-4">
-                    <div className="card-modern p-5 border-l-4 border-l-orange-400">
-                         <div className="flex justify-between items-center mb-2"><div className="text-xs font-bold text-slate-500 uppercase">(-) Собівартість</div><div className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded">{getPct(metrics.cogs)}%</div></div>
-                        <div className="text-2xl font-mono font-bold text-slate-700">-{metrics.cogs.toLocaleString()} ₴</div>
+                    <div className="card-edu p-5">
+                         <div className="text-xs font-bold text-slate-400 uppercase mb-2">(-) Собівартість (COGS)</div>
+                         <div className="text-2xl font-mono font-bold text-slate-700">-{metrics.cogs.toLocaleString()} ₴</div>
+                         <div className="mt-2 text-xs font-bold text-orange-500">{getPct(metrics.cogs)}% від виручки</div>
+                         <div className="w-full h-1 bg-slate-100 mt-2 rounded"><div className="h-full bg-orange-400 rounded" style={{width: `${getPct(metrics.cogs)}%`}}></div></div>
                     </div>
-                    <div className="card-modern p-5 border-l-4 border-l-red-400">
-                         <div className="flex justify-between items-center mb-2"><div className="text-xs font-bold text-slate-500 uppercase">(-) Витрати (OpEx)</div><div className="text-[10px] font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded">{getPct(metrics.opex)}%</div></div>
-                        <div className="text-2xl font-mono font-bold text-slate-700">-{metrics.opex.toLocaleString()} ₴</div>
+                    <div className="card-edu p-5 bg-blue-50 border-blue-100">
+                         <div className="text-xs font-bold text-blue-600 uppercase mb-2">(=) Валовий Прибуток</div>
+                         <div className="text-2xl font-mono font-bold text-blue-900">{(metrics.revenue - metrics.cogs).toLocaleString()} ₴</div>
+                         <div className="mt-2 text-xs font-bold text-blue-600">Маржа: {getPct(metrics.revenue - metrics.cogs)}%</div>
                     </div>
                 </div>
 
-                <div className="bg-slate-900 rounded-[24px] p-6 shadow-xl text-white flex justify-between items-center">
-                    <div>
-                        <div className="text-xs font-bold text-slate-400 uppercase mb-1">(=) Чистий Прибуток</div>
-                        <div className="text-4xl font-mono font-bold text-emerald-400">{metrics.net.toLocaleString()} ₴</div>
-                    </div>
-                    <div className="text-right"><div className="text-2xl font-bold">{getPct(metrics.net)}%</div></div>
-                </div>
-
-                <div className="card-modern p-6">
-                    <h3 className="font-bold text-lg text-slate-800 mb-4">Структура витрат</h3>
-                    <div className="space-y-4">
-                        {allExpenses.map((item, idx) => (
-                            <div key={item.cat} className="flex items-center gap-3">
-                                 <div className="text-xs font-bold text-slate-400 w-4">{idx+1}.</div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between text-sm font-bold text-slate-700 mb-1"><span>{item.cat}</span><span>{item.val.toLocaleString()}</span></div>
-                                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-brand-500 rounded-full" style={{width: `${getPct(item.val)}%`}}></div></div>
-                                </div>
+                <div className="card-edu p-6">
+                     <div className="flex justify-between items-center mb-4">
+                        <div className="text-sm font-bold text-slate-500 uppercase">(-) Операційні витрати (OpEx)</div>
+                        <div className="font-bold text-red-500">-{metrics.opex.toLocaleString()} ₴</div>
+                     </div>
+                     <div className="space-y-3">
+                        {opExItems.map(item => (
+                            <div key={item.cat} className="flex items-center gap-3 text-sm">
+                                <div className="w-32 font-bold text-slate-600 truncate">{item.cat}</div>
+                                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-red-400 rounded-full" style={{width: `${getPct(item.val)}%`}}></div></div>
+                                <div className="w-24 text-right font-mono">{item.val.toLocaleString()}</div>
+                                <div className="w-12 text-right text-xs text-slate-400">{getPct(item.val)}%</div>
                             </div>
                         ))}
+                     </div>
+                </div>
+
+                <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl flex justify-between items-center">
+                    <div>
+                        <div className="text-sm font-bold text-slate-400 uppercase mb-1">(=) Чистий Прибуток</div>
+                        <div className={`text-5xl font-mono font-bold ${metrics.net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{metrics.net.toLocaleString()} ₴</div>
+                    </div>
+                    <div className="text-right">
+                        <div className="text-2xl font-bold">{getPct(metrics.net)}%</div>
+                        <div className="text-xs text-slate-400 uppercase">Рентабельність</div>
                     </div>
                 </div>
             </div>
@@ -236,68 +266,75 @@
     };
 
     const CashFlowView = ({ metrics }) => (
-        <div className="max-w-4xl mx-auto animate-fade-in space-y-6 pb-20 md:pb-0">
-             <div className="bg-slate-900 text-white p-6 rounded-[24px] shadow-xl">
-                <div className="text-xs text-slate-400 uppercase mb-1">Чистий потік (Net Cash)</div>
-                <div className={`text-4xl font-mono font-bold ${metrics.netCashChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{metrics.netCashChange > 0 ? '+' : ''}{metrics.netCashChange.toLocaleString()} ₴</div>
+        <div className="max-w-4xl mx-auto animate-fade-in space-y-6 pb-24 md:pb-0">
+             <div className="info-box bg-purple-50 border-purple-200 text-purple-900">
+                <h3 className="font-bold flex items-center gap-2 mb-2"><Icon name="book-open" size={18}/> Cash Flow (Рух коштів)</h3>
+                <p className="text-sm">Цей звіт показує реальний рух <b>живих грошей</b>. <br/>Він пояснює, чому прибуток є, а грошей в касі може не бути (або навпаки).</p>
             </div>
-            <div className="card-modern p-6">
-                <h3 className="font-bold text-lg mb-4 text-blue-900">1. Операційна</h3>
-                <div className="flex justify-between py-2 border-b border-slate-50"><span>Надходження</span><span className="font-mono font-bold text-emerald-600">+{metrics.revenue.toLocaleString()}</span></div>
-                <div className="flex justify-between py-2 border-b border-slate-50"><span>Витрати</span><span className="font-mono font-bold text-red-600">-{metrics.totalExpense.toLocaleString()}</span></div>
+
+            <div className="card-edu p-6 border-l-4 border-l-blue-500">
+                <h3 className="font-bold text-lg mb-4 text-slate-800">1. Операційна діяльність</h3>
+                <div className="space-y-2">
+                    <div className="flex justify-between"><span>Надходження від клієнтів</span><span className="font-mono font-bold text-emerald-600">+{metrics.revenue.toLocaleString()}</span></div>
+                    <div className="flex justify-between"><span>Виплати (Товар + Витрати)</span><span className="font-mono font-bold text-red-600">-{metrics.totalExpense.toLocaleString()}</span></div>
+                    <div className="border-t pt-2 flex justify-between font-bold"><span>Чистий операційний потік</span><span>{metrics.operationalCashFlow.toLocaleString()} ₴</span></div>
+                </div>
             </div>
-            <div className="card-modern p-6">
-                <h3 className="font-bold text-lg mb-4 text-purple-900">2. Фінансова</h3>
-                <div className="flex justify-between py-2"><span>Дивіденди</span><span className="font-mono font-bold text-purple-600">-{metrics.dividends.toLocaleString()}</span></div>
+
+            <div className="card-edu p-6 border-l-4 border-l-purple-500">
+                <h3 className="font-bold text-lg mb-4 text-slate-800">2. Фінансова діяльність</h3>
+                <div className="space-y-2">
+                    <div className="flex justify-between"><span>Виплата дивідендів</span><span className="font-mono font-bold text-purple-600">-{metrics.dividends.toLocaleString()}</span></div>
+                    <div className="border-t pt-2 flex justify-between font-bold"><span>Чистий фінансовий потік</span><span>-{metrics.dividends.toLocaleString()} ₴</span></div>
+                </div>
+            </div>
+
+             <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl flex justify-between items-center">
+                 <div>
+                    <h3 className="text-lg font-bold mb-1">Net Cash Change</h3>
+                    <p className="text-xs text-slate-400">На скільки змінилась каса за період</p>
+                 </div>
+                <div className={`text-3xl font-mono font-bold ${metrics.netCashChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {metrics.netCashChange > 0 ? '+' : ''}{metrics.netCashChange.toLocaleString()} ₴
+                </div>
             </div>
         </div>
     );
 
     const DividendsView = ({ metrics, transactions, setModalType }) => (
-        <div className="max-w-4xl mx-auto animate-fade-in space-y-6 pb-20 md:pb-0">
-            <div className="bg-gradient-to-br from-slate-800 to-indigo-950 text-white p-8 rounded-[28px] shadow-2xl relative overflow-hidden">
-                <div className="relative z-10 text-center">
-                    <h2 className="text-2xl font-bold mb-4">Дивіденди</h2>
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-white/10 p-3 rounded-xl"><div className="text-[10px] uppercase text-slate-300">Всього</div><div className="text-lg font-mono font-bold">{metrics.net.toLocaleString()}</div></div>
-                        <div className="bg-white/10 p-3 rounded-xl"><div className="text-[10px] uppercase text-slate-300">Виведено</div><div className="text-lg font-mono font-bold text-purple-300">{metrics.dividends.toLocaleString()}</div></div>
-                    </div>
-                    <div className="bg-emerald-500/20 p-4 rounded-xl border border-emerald-500/30 mb-6"><div className="text-xs uppercase text-emerald-200 mb-1">Доступно</div><div className="text-2xl font-mono font-bold text-white">{(metrics.net - metrics.dividends).toLocaleString()} ₴</div></div>
-                    <button onClick={()=>setModalType('dividend')} className="w-full bg-white text-indigo-950 py-3 rounded-xl font-bold shadow-lg active:scale-95 transition">Виплатити собі</button>
-                </div>
+        <div className="max-w-4xl mx-auto animate-fade-in space-y-6 pb-24 md:pb-0">
+             <div className="info-box bg-indigo-50 border-indigo-200 text-indigo-900">
+                <h3 className="font-bold flex items-center gap-2 mb-2"><Icon name="gem" size={18}/> Дивіденди</h3>
+                <p className="text-sm">Це частина чистого прибутку, яку власник забирає собі. <br/><b>Правило:</b> Не виводьте більше, ніж сума "Доступно до виводу", щоб не "проїсти" обігові кошти.</p>
             </div>
-            <div className="card-modern p-6">
+
+            <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl text-center">
+                <h2 className="text-2xl font-bold mb-6">Калькулятор виводу</h2>
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                    <div className="bg-white/10 p-3 rounded-xl"><div className="text-[10px] uppercase text-slate-400">Прибуток</div><div className="text-lg font-mono font-bold text-emerald-400">{metrics.net.toLocaleString()}</div></div>
+                    <div className="bg-white/10 p-3 rounded-xl"><div className="text-[10px] uppercase text-slate-400">Вже знято</div><div className="text-lg font-mono font-bold text-purple-400">{metrics.dividends.toLocaleString()}</div></div>
+                    <div className="bg-emerald-500/20 p-3 rounded-xl border border-emerald-500/50"><div className="text-[10px] uppercase text-emerald-200 font-bold">Можна</div><div className="text-lg font-mono font-bold text-white">{(metrics.net - metrics.dividends).toLocaleString()}</div></div>
+                </div>
+                <button onClick={()=>setModalType('dividend')} className="w-full bg-white text-slate-900 py-3 rounded-xl font-bold hover:bg-slate-200 transition">Зафіксувати виплату</button>
+            </div>
+
+            <div className="card-edu p-6">
                 <h3 className="font-bold text-slate-800 mb-4">Історія виплат</h3>
-                {transactions.filter(t=>t.isDividend).map(t => (<div key={t.id} className="flex justify-between py-3 border-b border-slate-50 last:border-0"><div><div className="font-bold text-sm">Виплата</div><div className="text-xs text-slate-400">{t.date}</div></div><div className="font-bold text-purple-600 font-mono">-{t.amount.toLocaleString()}</div></div>))}
+                {transactions.filter(t=>t.isDividend).map(t => (
+                    <div key={t.id} className="flex justify-between py-3 border-b border-slate-100 last:border-0">
+                        <div><div className="font-bold text-sm text-slate-700">Виплата</div><div className="text-xs text-slate-400">{t.date}</div></div>
+                        <div className="font-bold text-purple-600 font-mono">-{t.amount.toLocaleString()} ₴</div>
+                    </div>
+                ))}
             </div>
         </div>
     );
 
-    // --- SECURE DELETE MODAL ---
-    const DeleteConfirmModal = ({ id, close, confirm }) => {
-        const [input, setInput] = useState('');
-        return (
-            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-                <div className="card-modern w-full max-w-sm p-6 bg-white text-center">
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500"><Icon name="alert-triangle" size={24}/></div>
-                    <h3 className="text-lg font-bold text-slate-800 mb-2">Підтвердіть видалення</h3>
-                    <p className="text-sm text-slate-500 mb-4">Цю дію неможливо відмінити. Введіть слово <b>видалити</b> нижче, щоб підтвердити.</p>
-                    <input type="text" value={input} onChange={e=>setInput(e.target.value)} className="w-full border border-slate-300 p-2 rounded-xl text-center mb-4 font-bold outline-none focus:border-red-500 uppercase" placeholder="ВИДАЛИТИ"/>
-                    <div className="flex gap-2">
-                        <button onClick={close} className="flex-1 py-2 text-slate-500 font-bold bg-slate-100 rounded-xl">Скасувати</button>
-                        <button disabled={input.toLowerCase() !== 'видалити'} onClick={()=>confirm(id)} className="flex-1 py-2 text-white font-bold bg-red-500 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">Видалити</button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-    // --- OPS VIEW (FIXED LAYOUT & DELETE) ---
     const OpsView = ({ transactions, deleteTx, syncMono, canDelete, categories }) => {
         const [isSyncing, setIsSyncing] = useState(false);
         const [filters, setFilters] = useState({ date: '', source: 'all', type: 'all' });
         const [page, setPage] = useState(1);
-        const [deleteId, setDeleteId] = useState(null); // For secure delete
+        const [deleteId, setDeleteId] = useState(null);
         const ITEMS_PER_PAGE = 20;
 
         const handleSync = async () => { setIsSyncing(true); await syncMono(); setIsSyncing(false); };
@@ -309,57 +346,45 @@
             return true;
         });
 
-        // Pagination Logic
         const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
         const paginatedData = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
         useEffect(() => { setPage(1); }, [filters]); 
 
-        const confirmDelete = async (id) => {
-            await deleteTx(id);
-            setDeleteId(null);
-        }
+        const confirmDelete = async (id) => { await deleteTx(id); setDeleteId(null); }
 
         return (
-            <div className="space-y-6 animate-fade-in pb-20 md:pb-0">
-                {/* Fixed Layout for Mobile Button */}
-                <div className="card-modern p-4 bg-slate-50/80 sticky top-0 z-20 backdrop-blur-md flex flex-col md:flex-row gap-4 items-stretch md:items-center">
-                    <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar flex-1">
-                        <input type="date" className="bg-white border rounded-xl px-3 py-2 text-xs min-w-[120px]" value={filters.date} onChange={e=>setFilters({...filters, date:e.target.value})} />
-                        <select className="bg-white border rounded-xl px-3 py-2 text-xs" value={filters.type} onChange={e=>setFilters({...filters, type:e.target.value})}><option value="all">Всі типи</option><option value="income">Дохід</option><option value="expense">Витрата</option></select>
-                    </div>
-                    <button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 text-white px-4 py-3 md:py-2 rounded-xl text-xs font-bold whitespace-nowrap flex items-center justify-center gap-2 shadow-lg md:shadow-none active:scale-95 transition">
-                        <Icon name="refresh-cw" size={14} className={isSyncing ? "animate-spin" : ""}/> {isSyncing ? "..." : "Синхронізація"}
-                    </button>
+            <div className="space-y-6 animate-fade-in pb-24 md:pb-0">
+                {/* Mobile Friendly Filter Bar */}
+                <div className="card-edu p-4 bg-slate-50 sticky top-0 z-20 shadow-sm flex gap-3 overflow-x-auto no-scrollbar items-center">
+                    <input type="date" className="bg-white border rounded-lg px-2 py-2 text-xs min-w-[120px]" value={filters.date} onChange={e=>setFilters({...filters, date:e.target.value})} />
+                    <select className="bg-white border rounded-lg px-2 py-2 text-xs" value={filters.type} onChange={e=>setFilters({...filters, type:e.target.value})}><option value="all">Всі типи</option><option value="income">Дохід</option><option value="expense">Витрата</option></select>
+                    <button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap flex items-center gap-1 shadow-md"><Icon name="refresh-cw" size={14} className={isSyncing?"animate-spin":""}/> Синхро</button>
+                    {(filters.date||filters.type!=='all')&&<button onClick={()=>setFilters({date:'',source:'all',type:'all'})} className="text-red-500 text-xs font-bold px-2">Скинути</button>}
                 </div>
 
-                <div className="card-modern overflow-hidden">
+                <div className="card-edu overflow-hidden">
                     <div className="divide-y divide-slate-100">
                         {paginatedData.map(t => (
-                            <div key={t.id} className="p-4 flex justify-between items-start active:bg-slate-50 transition group">
-                                <div className="flex gap-3">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg ${t.type==='income'?'bg-emerald-100 text-emerald-600':'bg-brand-50 text-brand-600'}`}>
-                                        <Icon name={t.type==='income'?'arrow-down-left':'arrow-up-right'} size={20}/>
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-sm text-slate-800 line-clamp-1">{t.description}</div>
-                                        <div className="text-xs text-slate-500 mt-1 flex gap-2">
-                                            <span>{t.date}</span>
-                                            <span className="bg-slate-100 px-1.5 rounded text-slate-600">{t.cat}</span>
-                                        </div>
+                            <div key={t.id} className="p-4 flex justify-between items-start active:bg-slate-50 transition">
+                                <div>
+                                    <div className="font-bold text-sm text-slate-800 line-clamp-1">{t.description}</div>
+                                    <div className="text-xs text-slate-500 mt-1 flex gap-2">
+                                        <span className="bg-slate-100 px-1.5 rounded">{t.date}</span>
+                                        <span className="bg-slate-100 px-1.5 rounded text-slate-600">{t.cat}</span>
                                     </div>
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-1">
                                     <div className={`font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>
                                         {t.type==='income'?'+':'-'}{(Number(t.amount)||0).toLocaleString()}
                                     </div>
-                                    {canDelete && <button onClick={()=>setDeleteId(t.id)} className="text-slate-300 p-1 bg-slate-50 rounded md:opacity-0 group-hover:opacity-100 transition"><Icon name="trash-2" size={14}/></button>}
+                                    {canDelete && <button onClick={()=>setDeleteId(t.id)} className="text-slate-300 p-1"><Icon name="trash-2" size={14}/></button>}
                                 </div>
                             </div>
                         ))}
                     </div>
                     {filtered.length > ITEMS_PER_PAGE && (
-                        <div className="p-4 flex justify-center gap-4 border-t border-slate-100 bg-slate-50/50">
+                        <div className="p-4 flex justify-center gap-4 border-t border-slate-100 bg-slate-50">
                             <button disabled={page===1} onClick={()=>setPage(p=>p-1)} className="px-4 py-2 bg-white border rounded-lg text-xs font-bold disabled:opacity-50">Назад</button>
                             <span className="text-xs font-bold flex items-center">{page} / {totalPages}</span>
                             <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="px-4 py-2 bg-white border rounded-lg text-xs font-bold disabled:opacity-50">Далі</button>
@@ -371,30 +396,47 @@
         );
     };
 
-    // --- MANAGERS & SETTINGS ---
+    const DeleteConfirmModal = ({ id, close, confirm }) => {
+        const [input, setInput] = useState('');
+        return (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+                <div className="bg-white rounded-3xl w-full max-w-sm p-6 text-center shadow-2xl">
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500"><Icon name="alert-triangle" size={24}/></div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2">Видалення</h3>
+                    <p className="text-sm text-slate-500 mb-4">Напишіть слово <b>видалити</b> (маленькими), щоб підтвердити.</p>
+                    <input type="text" value={input} onChange={e=>setInput(e.target.value)} className="w-full border border-slate-300 p-3 rounded-xl text-center mb-4 font-bold outline-none focus:border-red-500" placeholder="видалити"/>
+                    <div className="flex gap-2">
+                        <button onClick={close} className="flex-1 py-3 text-slate-500 font-bold bg-slate-100 rounded-xl">Скасувати</button>
+                        <button disabled={input !== 'видалити'} onClick={()=>confirm(id)} className="flex-1 py-3 text-white font-bold bg-red-500 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">Видалити</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const ManagersView = ({ db }) => {
         const [managers, setManagers] = useState([]);
         const [showModal, setShowModal] = useState(false);
         const [editingManager, setEditingManager] = useState(null);
         useEffect(() => { const q = query(collection(db, "managers")); const unsub = onSnapshot(q, (snap) => setManagers(snap.docs.map(d => ({ id: d.id, ...d.data() })))); return () => unsub(); }, []);
-        const deleteManager = async (id) => { if(confirm("Видалити?")) await deleteDoc(doc(db, "managers", id)); };
+        const deleteManager = async (id) => { if(confirm("Видалити менеджера?")) await deleteDoc(doc(db, "managers", id)); };
         const openAdd = () => { setEditingManager(null); setShowModal(true); };
         const openEdit = (manager) => { setEditingManager(manager); setShowModal(true); };
 
         return (
-            <div className="max-w-5xl mx-auto space-y-6 animate-fade-in pb-20 md:pb-0">
-                <div className="flex justify-between items-center card-modern p-6">
+            <div className="max-w-5xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-0">
+                <div className="flex justify-between items-center card-edu p-6">
                     <h2 className="text-xl font-bold text-slate-800">Команда</h2>
                     <button onClick={openAdd} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm">+ Додати</button>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                     {managers.map(m => (
-                        <div key={m.id} className="card-modern p-5 relative">
+                        <div key={m.id} className="card-edu p-5 relative">
                             <div className="absolute top-4 right-4 flex gap-2">
                                 <button onClick={()=>openEdit(m)} className="text-slate-400 bg-slate-50 p-2 rounded-lg"><Icon name="pencil" size={16}/></button>
                                 <button onClick={()=>deleteManager(m.id)} className="text-red-400 bg-red-50 p-2 rounded-lg"><Icon name="trash-2" size={16}/></button>
                             </div>
-                            <div className="flex items-center gap-4 mb-4"><div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xl">{m.name?.[0]||'U'}</div><div><div className="font-bold">{m.name}</div><div className="text-xs text-slate-400">{m.email}</div></div></div>
+                            <div className="flex items-center gap-4 mb-4"><div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold">{m.name?.[0]||'U'}</div><div><div className="font-bold">{m.name}</div><div className="text-xs text-slate-400">{m.email}</div></div></div>
                              <div className="text-xs text-slate-400 bg-slate-50 p-2 rounded-lg mb-2">Доступ: {(m.permissions||[]).join(', ')}</div>
                              <div className="text-xs text-slate-400">Пароль: {m.password}</div>
                         </div>
@@ -415,7 +457,7 @@
         };
         const VIEWS_TO_SELECT = ALL_VIEWS.filter(v => v.id !== 'settings' && v.id !== 'managers');
         return (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"><div className="card-modern w-full max-w-md p-6 animate-fade-in"><h3 className="font-bold text-lg mb-4">{isEdit ? "Редагування" : "Новий менеджер"}</h3><div className="space-y-3"><input placeholder="Ім'я" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="w-full border p-3 rounded-xl"/><input placeholder="Email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} className="w-full border p-3 rounded-xl"/><input placeholder="Пароль" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} className="w-full border p-3 rounded-xl"/><div className="grid grid-cols-2 gap-2">{VIEWS_TO_SELECT.map(v => (<label key={v.id} className="flex items-center gap-2 p-2 border rounded-lg"><input type="checkbox" checked={(form.permissions||[]).includes(v.id)} onChange={()=>togglePerm(v.id)} /><span className="text-xs">{v.label}</span></label>))}</div><button onClick={submit} className="w-full bg-brand-500 text-white py-3 rounded-xl font-bold mt-2">Зберегти</button><button onClick={close} className="w-full py-3 text-slate-400">Скасувати</button></div></div></div>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"><div className="card-edu w-full max-w-md p-6 animate-fade-in"><h3 className="font-bold text-lg mb-4">{isEdit ? "Редагування" : "Новий менеджер"}</h3><div className="space-y-3"><input placeholder="Ім'я" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="w-full border p-3 rounded-xl"/><input placeholder="Email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} className="w-full border p-3 rounded-xl"/><input placeholder="Пароль" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} className="w-full border p-3 rounded-xl"/><div className="grid grid-cols-2 gap-2">{VIEWS_TO_SELECT.map(v => (<label key={v.id} className="flex items-center gap-2 p-2 border rounded-lg"><input type="checkbox" checked={(form.permissions||[]).includes(v.id)} onChange={()=>togglePerm(v.id)} /><span className="text-xs">{v.label}</span></label>))}</div><button onClick={submit} className="w-full bg-brand-500 text-white py-3 rounded-xl font-bold mt-2">Зберегти</button><button onClick={close} className="w-full py-3 text-slate-400">Скасувати</button></div></div></div>
         );
     };
 
@@ -424,15 +466,15 @@
         const addCat = (t, v, setter) => { if(!v) return; saveCategories({...categories, [t]: [...(categories?.[t]||[]), v]}); setter(''); };
         const removeCat = (t, v) => { if(confirm('Видалити?')) saveCategories({...categories, [t]: categories[t].filter(c=>c!==v)}); };
         return (
-            <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-20 md:pb-0">
-                <div className="card-modern p-6">
+            <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-0">
+                <div className="card-edu p-6">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Icon name="tags"/> Категорії</h2>
                     <div className="space-y-6">
                         <div><div className="flex gap-2 mb-2"><input type="text" value={newCatIn} onChange={e=>setNewCatIn(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="Дохід..."/><button onClick={()=>addCat('income',newCatIn,setNewCatIn)} className="bg-emerald-500 text-white p-2 rounded-lg">+</button></div><div className="flex flex-wrap gap-2">{(categories?.income||[]).map(c => (<span key={c} className="bg-emerald-50 text-emerald-700 text-xs px-2 py-1 rounded border border-emerald-100 flex items-center gap-1">{c} <button onClick={()=>removeCat('income',c)}>x</button></span>))}</div></div>
                         <div><div className="flex gap-2 mb-2"><input type="text" value={newCatOut} onChange={e=>setNewCatOut(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm" placeholder="Витрата..."/><button onClick={()=>addCat('expense',newCatOut,setNewCatOut)} className="bg-brand-500 text-white p-2 rounded-lg">+</button></div><div className="flex flex-wrap gap-2">{(categories?.expense||[]).map(c => (<span key={c} className="bg-orange-50 text-brand-600 text-xs px-2 py-1 rounded border border-orange-100 flex items-center gap-1">{c} <button onClick={()=>removeCat('expense',c)}>x</button></span>))}</div></div>
                     </div>
                 </div>
-                <div className="card-modern p-6">
+                <div className="card-edu p-6">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Icon name="link"/> Monobank</h2>
                     <div className="space-y-4">
                         <input value={settings.monoKey} onChange={e=>setSettings({...settings, monoKey:e.target.value})} placeholder="X-Token" className="w-full border p-3 rounded-xl text-sm"/>
@@ -535,10 +577,17 @@
         const delAll = async () => { if(confirm("ВИДАЛИТИ ВСЮ БАЗУ ДАНИХ? Це неможливо відмінити.")) { const s = await getDocs(query(collection(db,"transactions"), limit(500))); const b = writeBatch(db); s.docs.forEach(d=>b.delete(d.ref)); await b.commit(); alert("Базу очищено."); } };
 
         if (view === 'auth') return (
-            <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black flex items-center justify-center p-4 relative overflow-hidden">
-                <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-brand-500/20 rounded-full blur-[120px] animate-pulse"></div>
-                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px]"></div>
-                <div className="bg-white/5 backdrop-blur-xl p-10 rounded-[32px] w-full max-w-sm text-center border border-white/10 shadow-2xl relative z-10"><div className="mb-8 flex flex-col items-center"><div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/30 mb-4 transform rotate-3 relative"><Icon name="flame" size={40} className="text-white absolute -top-1 -right-1 opacity-80"/><span className="text-4xl font-extrabold text-white">L</span></div><h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">Latiao <span className="text-brand-500">Фінанси</span></h1><p className="text-slate-400 text-sm mt-2 font-medium">Корпоративна система обліку</p></div><form onSubmit={handleLogin} className="space-y-4"><div className="relative"><Icon name="mail" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="email" placeholder="Email або Логін" value={email} onChange={e=>setEmail(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div><div className="relative"><Icon name="lock" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="password" placeholder="Пароль" value={pass} onChange={e=>setPass(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div><button type="submit" className="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white py-4 rounded-2xl font-bold transition shadow-lg shadow-brand-500/20 active:scale-[0.98] mt-2 flex items-center justify-center gap-2">{loading ? <Icon name="loader" className="animate-spin"/> : <Icon name="log-in"/>} Увійти в систему</button></form></div>
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+                <div className="bg-white/10 backdrop-blur-md p-8 rounded-3xl w-full max-w-sm text-center border border-white/10 shadow-2xl">
+                    <div className="w-16 h-16 bg-brand-500 rounded-2xl mx-auto flex items-center justify-center text-3xl font-bold text-white mb-6 shadow-lg">L</div>
+                    <h1 className="text-2xl font-bold text-white mb-2">Latiao Finance</h1>
+                    <p className="text-slate-400 text-sm mb-6">Вхід у систему</p>
+                    <form onSubmit={handleLogin}>
+                        <input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} className="w-full p-3 rounded-xl mb-3 bg-slate-800 text-white border border-slate-700"/>
+                        <input type="password" placeholder="Пароль" value={pass} onChange={e=>setPass(e.target.value)} className="w-full p-3 rounded-xl mb-6 bg-slate-800 text-white border border-slate-700"/>
+                        <button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white py-3 rounded-xl font-bold transition shadow-lg">{loading?'Зачекайте...':'Увійти'}</button>
+                    </form>
+                </div>
             </div>
         );
 
@@ -547,9 +596,9 @@
         return (
             <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
                 <aside className="hidden md:flex w-72 bg-white border-r border-slate-200/70 flex-col z-20 shadow-soft relative">
-                    <div className="p-8 pb-4 relative"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20 transform -rotate-3 relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div><Icon name="flame" size={24} className="text-white relative z-10"/></div><div className="leading-none"><h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex flex-col"><span>Latiao</span><span className="text-brand-600 text-sm font-bold">Фінанси</span></h1></div></div></div>
+                    <div className="p-8 pb-4 relative"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center shadow-lg text-white font-bold text-xl">L</div><div className="leading-none"><h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex flex-col"><span>Latiao</span><span className="text-brand-600 text-sm font-bold">Фінанси</span></h1></div></div></div>
                     <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto py-4"><div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider">Основне</div>{ALL_VIEWS.filter(v => canAccess(v.id) && v.id !== 'settings' && v.id !== 'managers').map(item => (<button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view===item.id ? 'active' : 'text-slate-500 hover:bg-brand-50 hover:text-brand-600'}`}><Icon name={item.icon} size={20} className={`transition-transform group-hover:scale-110 ${view===item.id ? '' : 'opacity-70 group-hover:opacity-100'}`}/> <span className="capitalize">{item.label}</span></button>))}</nav>
-                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-1.5 pb-8"><div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider">Адміністрування</div>{canAccess('managers') && <button onClick={()=>setView('managers')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='managers'?'active':'text-slate-500 hover:bg-brand-50 hover:text-brand-600'}`}><Icon name="users-round" size={20} className={`transition-transform group-hover:scale-110 ${view==='managers'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Команда</span></button>}{canAccess('settings') && <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='settings'?'active':'text-slate-500 hover:bg-brand-50 hover:text-brand-600'}`}><Icon name="sliders-horizontal" size={20} className={`transition-transform group-hover:scale-110 ${view==='settings'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Налаштування</span></button>}<button onClick={handleLogout} className="w-full flex items-center gap-3 p-3.5 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all sidebar-link mt-4 group"><Icon name="log-out" size={20} className="opacity-70 group-hover:opacity-100 transition-transform group-hover:translate-x-1"/> Вихід з системи</button></div>
+                    <div className="p-4 border-t border-slate-100 bg-slate-50/50 space-y-1.5 pb-8"><div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider">Адміністрування</div>{canAccess('managers') && <button onClick={()=>setView('managers')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='managers'?'active':'text-slate-500 hover:bg-brand-50 hover:text-brand-600'}`}><Icon name="users" size={20} className={`transition-transform group-hover:scale-110 ${view==='managers'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Команда</span></button>}{canAccess('settings') && <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='settings'?'active':'text-slate-500 hover:bg-brand-50 hover:text-brand-600'}`}><Icon name="settings" size={20} className={`transition-transform group-hover:scale-110 ${view==='settings'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Налаштування</span></button>}<button onClick={handleLogout} className="w-full flex items-center gap-3 p-3.5 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all sidebar-link mt-4 group"><Icon name="log-out" size={20} className="opacity-70 group-hover:opacity-100 transition-transform group-hover:translate-x-1"/> Вихід з системи</button></div>
                 </aside>
                 
                 <main className="flex-1 overflow-y-auto p-4 md:p-8 relative scroll-smooth no-scrollbar">
