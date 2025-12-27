@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao Finance | Team Management v12.4</title>
+    <title>Latiao Finance | Team v12.4</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -67,6 +67,11 @@
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
     };
 
+    const DEFAULT_CATEGORIES = {
+        income: ['Продажі', 'Кешбек', 'Повернення', 'Інше'],
+        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Знижки', 'Інше']
+    };
+
     const ALL_VIEWS = [
         {id:'dashboard', label:'Огляд', icon:'layout-dashboard'},
         {id:'ops', label:'Операції', icon:'list'},
@@ -77,7 +82,7 @@
         {id:'managers', label:'Команда', icon:'users'} 
     ];
 
-    // --- SUB-COMPONENTS (Defined BEFORE App to prevent crashes) ---
+    // --- SUB-COMPONENTS ---
 
     const DashboardView = ({ metrics, transactions, setView }) => {
         const isHealthy = metrics.margin > 20;
@@ -193,21 +198,23 @@
         );
     };
 
-    // --- MANAGERS & SETTINGS ---
-
+    // --- MANAGERS COMPONENT ---
     const ManagersView = ({ db }) => {
         const [managers, setManagers] = useState([]);
         const [showModal, setShowModal] = useState(false);
+        
         useEffect(() => {
             const q = query(collection(db, "managers"));
             const unsub = onSnapshot(q, (snap) => setManagers(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
             return () => unsub();
         }, []);
-        const deleteManager = async (id) => { if(confirm("Видалити менеджера? Він втратить доступ.")) await deleteDoc(doc(db, "managers", id)); };
+
+        const deleteManager = async (id) => { if(confirm("Видалити менеджера?")) await deleteDoc(doc(db, "managers", id)); };
+
         return (
             <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
                 <div className="flex justify-between items-center bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                    <div><h2 className="text-xl font-bold text-slate-800">Команда</h2><p className="text-sm text-slate-400">Доступ для співробітників</p></div>
+                    <div><h2 className="text-xl font-bold text-slate-800">Команда</h2><p className="text-sm text-slate-400">Управління доступом</p></div>
                     <button onClick={()=>setShowModal(true)} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm">+ Додати менеджера</button>
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -231,14 +238,16 @@
     const AddManagerModal = ({ db, close }) => {
         const [form, setForm] = useState({ name: '', email: '', password: '', permissions: ['dashboard', 'ops'] });
         const togglePerm = (p) => setForm(prev => ({...prev, permissions: prev.permissions.includes(p) ? prev.permissions.filter(x => x !== p) : [...prev.permissions, p]}));
+        
         const submit = async () => {
             if(!form.name || !form.email || !form.password) return alert("Заповніть всі поля");
-            try {
-                await addDoc(collection(db, "managers"), form);
-                close();
-            } catch(e) { alert("Помилка: " + e.message); }
+            await addDoc(collection(db, "managers"), form);
+            close();
         };
+        
+        // List of views that can be assigned (excluding Managers & Settings for safety)
         const VIEWS_TO_SELECT = ALL_VIEWS.filter(v => v.id !== 'settings' && v.id !== 'managers');
+
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
                 <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl animate-fade-in">
@@ -247,7 +256,16 @@
                         <input placeholder="Ім'я" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="w-full border p-3 rounded-xl text-sm"/>
                         <input placeholder="Email (Логін)" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} className="w-full border p-3 rounded-xl text-sm"/>
                         <input placeholder="Пароль" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} className="w-full border p-3 rounded-xl text-sm"/>
-                        <div className="pt-2"><label className="text-xs font-bold uppercase text-slate-400 mb-2 block">Доступ до розділів:</label><div className="space-y-2">{VIEWS_TO_SELECT.map(v => (<label key={v.id} className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-slate-50"><input type="checkbox" checked={form.permissions.includes(v.id)} onChange={()=>togglePerm(v.id)} /><span className="text-sm font-medium">{v.label}</span></label>))}</div></div>
+                        <div className="pt-2"><label className="text-xs font-bold uppercase text-slate-400 mb-2 block">Доступ:</label>
+                            <div className="space-y-2">
+                                {VIEWS_TO_SELECT.map(v => (
+                                    <label key={v.id} className="flex items-center gap-2 p-2 border rounded-lg cursor-pointer hover:bg-slate-50">
+                                        <input type="checkbox" checked={form.permissions.includes(v.id)} onChange={()=>togglePerm(v.id)} />
+                                        <span className="text-sm font-medium">{v.label}</span>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
                         <button onClick={submit} className="w-full bg-brand-500 text-white py-3 rounded-xl font-bold mt-4">Створити</button>
                         <button onClick={close} className="w-full text-slate-400 py-2 text-sm">Скасувати</button>
                     </div>
@@ -273,7 +291,7 @@
         );
     };
 
-    // --- MAIN APP CONTROLLER ---
+    // --- MAIN APP ---
 
     const App = () => {
         const [currentUser, setCurrentUser] = useState(null);
@@ -287,21 +305,17 @@
         const [pass, setPass] = useState('');
         const [modalType, setModalType] = useState(null);
 
-        // --- AUTH LOGIC ---
         useEffect(() => {
             const unsub = onAuthStateChanged(auth, async (u) => {
                 if (u) {
-                    // Admin (Firebase Auth)
                     setCurrentUser({ uid: u.uid, email: u.email, role: 'admin', permissions: ['all'] });
                     setView('dashboard');
                     loadData();
                 } else {
-                    // Manager (Local Storage Persistence)
                     try {
-                        const stored = localStorage.getItem('latiao_user');
-                        if (stored) {
-                            const userObj = JSON.parse(stored);
-                            setCurrentUser(userObj);
+                        const storedManager = localStorage.getItem('latiao_user');
+                        if (storedManager) {
+                            setCurrentUser(JSON.parse(storedManager));
                             setView('dashboard');
                             loadData();
                         } else {
@@ -324,11 +338,8 @@
             try {
                 const sSnap = await getDoc(doc(db, "settings", "global"));
                 if (sSnap.exists()) setSettings(sSnap.data());
-                
                 const cSnap = await getDoc(doc(db, "settings", "categories"));
                 if (cSnap.exists()) setCategories(cSnap.data());
-                else await setDoc(doc(db, "settings", "categories"), DEFAULT_CATEGORIES);
-
                 const q = query(collection(db, "transactions"));
                 onSnapshot(q, (snap) => {
                     const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -362,11 +373,9 @@
         const handleLogin = async (e) => {
             e.preventDefault();
             setLoading(true);
-            // 1. Try Admin Login (Firebase)
             try {
                 await signInWithEmailAndPassword(auth, email, pass);
             } catch (authErr) {
-                // 2. Try Manager Login (Firestore)
                 try {
                     const q = query(collection(db, "managers"), where("email", "==", email), where("password", "==", pass));
                     const snapshot = await getDocs(q);
@@ -401,7 +410,6 @@
             return currentUser.permissions?.includes(viewId);
         };
 
-        // Actions
         const deleteTx = async (id) => { if(confirm('Видалити?')) await deleteDoc(doc(db, "transactions", id)); };
         const saveS = async (d) => { await setDoc(doc(db, "settings", "global"), d); setSettings(d); alert('Збережено'); };
         const saveC = async (d) => { await setDoc(doc(db, "settings", "categories"), d); setCategories(d); };
