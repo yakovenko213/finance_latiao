@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao Finance | Operations Filter v9.5</title>
+    <title>Latiao Finance | Custom Categories v9.6</title>
     
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -34,7 +34,6 @@
         .logo-mono { background-image: url('https://multicast.com.ua/wp-content/uploads/2024/04/monobank-logo.png'); background-size: contain; background-repeat: no-repeat; background-position: center; }
         .logo-nova { background-image: url('https://novapay.ua/wp-content/themes/novapay/assets/img/logo.svg'); background-size: contain; background-repeat: no-repeat; background-position: center; }
         
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -70,6 +69,12 @@
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
     };
 
+    // Default Categories (Fallback)
+    const DEFAULT_CATEGORIES = {
+        income: ['Продажі', 'Кешбек', 'Повернення', 'Інше'],
+        expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Інше']
+    };
+
     const App = () => {
         const [user, setUser] = useState(null);
         const [view, setView] = useState('auth');
@@ -77,11 +82,10 @@
         const [loading, setLoading] = useState(true);
         const [statusMsg, setStatusMsg] = useState('');
         
-        const [settings, setSettings] = useState({ 
-            monoKey: '', 
-            novaKey: '',
-            monoAccountId: ''
-        });
+        // Settings State
+        const [settings, setSettings] = useState({ monoKey: '', novaKey: '', monoAccountId: '' });
+        // Category State
+        const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
 
         const [email, setEmail] = useState('');
         const [pass, setPass] = useState('');
@@ -94,11 +98,24 @@
                     setView('dashboard');
                     setLoading(true);
 
+                    // Load Global Settings
                     try {
                         const sSnap = await getDoc(doc(db, "settings", "global"));
                         if (sSnap.exists()) setSettings(sSnap.data());
                     } catch(e) { console.error(e); }
 
+                    // Load Categories
+                    try {
+                        const cSnap = await getDoc(doc(db, "settings", "categories"));
+                        if (cSnap.exists()) {
+                            setCategories(cSnap.data());
+                        } else {
+                            // Initial Save if empty
+                            await setDoc(doc(db, "settings", "categories"), DEFAULT_CATEGORIES);
+                        }
+                    } catch(e) { console.error(e); }
+
+                    // Load Transactions
                     const q = query(collection(db, "transactions"));
                     const unsubDb = onSnapshot(q, (snap) => {
                         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -147,33 +164,31 @@
 
         const saveSettings = async (newSettings) => {
             const toSave = newSettings || settings;
-            if (toSave.monoKey && !toSave.monoAccountId) {
-                 alert("Увага: Ви ввели токен, але не обрали конкретний рахунок.");
-            }
+            if (toSave.monoKey && !toSave.monoAccountId) alert("Увага: Ви ввели токен, але не обрали конкретний рахунок.");
             await setDoc(doc(db, "settings", "global"), toSave);
             setSettings(toSave);
             alert('Налаштування збережено!');
         };
 
-        const syncMono = async () => {
-            if (!settings.monoKey) return alert("Будь ласка, введіть X-Token Monobank в налаштуваннях.");
-            if (!settings.monoAccountId || settings.monoAccountId === '0') {
-                 return alert("Помилка: Не обрано конкретний рахунок. Зайдіть в налаштування та оберіть рахунок.");
-            }
+        const saveCategories = async (newCats) => {
+            await setDoc(doc(db, "settings", "categories"), newCats);
+            setCategories(newCats);
+        }
 
-            setStatusMsg(`⏳ Синхронізація з Monobank...`);
-            
+        const syncMono = async () => {
+            if (!settings.monoKey) return alert("Введіть X-Token Monobank.");
+            if (!settings.monoAccountId) return alert("Оберіть рахунок в налаштуваннях.");
+
+            setStatusMsg(`⏳ Синхронізація...`);
             const now = Math.floor(Date.now() / 1000);
             const monthAgo = now - (31 * 24 * 60 * 60); 
             const accountId = settings.monoAccountId; 
-
             const url = `https://corsproxy.io/?https://api.monobank.ua/personal/statement/${accountId}/${monthAgo}/${now}`;
 
             try {
                 const res = await fetch(url, { headers: { 'X-Token': settings.monoKey } });
                 if (!res.ok) throw new Error(`Помилка API: ${res.status}`);
                 const data = await res.json();
-                
                 if (!Array.isArray(data)) throw new Error("Отримано некоректні дані.");
 
                 setStatusMsg(`✅ Отримано ${data.length} транзакцій. Обробка...`);
@@ -183,17 +198,20 @@
 
                 for (const item of data) {
                     if (existingIds.has(item.id)) continue; 
-
                     const amount = Math.abs(item.amount / 100);
                     const isIncome = item.amount > 0;
                     
                     let cat = 'Інше';
                     const desc = (item.description || '').toLowerCase();
-                    if (desc.includes('nova') || desc.includes('пошта')) cat = 'Логістика';
-                    if (desc.includes('food') || desc.includes('cafe') || desc.includes('mcdonalds')) cat = 'Офіс';
-                    if (desc.includes('atb') || desc.includes('silpo') || desc.includes('metro')) cat = 'Закупівля (COGS)';
-                    if (desc.includes('market') || desc.includes('prom') || desc.includes('google') || desc.includes('meta')) cat = 'Реклама';
-                    if (desc.includes('tax') || desc.includes('податок')) cat = 'Податки';
+                    // Basic Auto-cat
+                    if (desc.includes('nova')) cat = 'Логістика';
+                    if (desc.includes('atb') || desc.includes('silpo')) cat = 'Закупівля (COGS)';
+                    
+                    // Check if detected cat exists in user categories, else default
+                    const catList = isIncome ? categories.income : categories.expense;
+                    if(!catList.includes(cat) && !catList.includes('Логістика') && !catList.includes('Закупівля (COGS)')) {
+                        cat = catList.includes('Інше') ? 'Інше' : catList[0];
+                    }
 
                     const newDoc = doc(collection(db, "transactions"));
                     batch.set(newDoc, {
@@ -217,7 +235,6 @@
                     setStatusMsg("👌 Нових операцій немає.");
                 }
                 setTimeout(() => setStatusMsg(''), 4000);
-
             } catch (err) {
                 console.error(err);
                 setStatusMsg(`❌ Помилка: ${err.message}`);
@@ -235,15 +252,11 @@
                     const batch = writeBatch(db);
                     snapshot.docs.forEach((doc) => batch.delete(doc.ref));
                     await batch.commit();
-                    setStatusMsg(`🗑️ Видалено пачку...`);
                     snapshot = await getDocs(query(ref, limit(500)));
                 }
-                setStatusMsg("✅ База повністю очищена!");
+                setStatusMsg("✅ База очищена!");
                 setTimeout(() => setStatusMsg(''), 3000);
-            } catch (e) {
-                setStatusMsg("❌ Помилка видалення.");
-                alert("Помилка: " + e.message);
-            }
+            } catch (e) { alert("Помилка: " + e.message); }
         };
 
         if (view === 'auth') return (
@@ -266,24 +279,30 @@
                         <div className="w-8 h-8 bg-brand-500 rounded-lg text-white flex items-center justify-center shadow-md">L</div> 
                         Latiao
                     </div>
+                    {/* Navigation Top */}
                     <nav className="flex-1 px-4 space-y-1 mt-2">
-                        {['dashboard','ops','pnl','dividends','settings'].map(item => (
+                        {['dashboard','ops','pnl','dividends'].map(item => (
                             <button key={item} onClick={()=>setView(item)} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view===item ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
-                                <Icon name={item==='ops'?'list':(item==='pnl'?'pie-chart':(item==='dividends'?'gem':(item==='settings'?'settings':'layout-dashboard')))} size={20}/> 
-                                <span className="capitalize">{item === 'ops' ? 'Операції' : (item === 'settings' ? 'Налаштування' : item)}</span>
+                                <Icon name={item==='ops'?'list':(item==='pnl'?'pie-chart':(item==='dividends'?'gem':'layout-dashboard'))} size={20}/> 
+                                <span className="capitalize">{item === 'ops' ? 'Операції' : item}</span>
                             </button>
                         ))}
                     </nav>
-                    <div className="p-4 border-t">
-                        <button onClick={()=>signOut(auth)} className="text-slate-400 hover:text-red-500 text-sm flex gap-2 w-full px-2 py-2 font-medium transition"><Icon name="log-out"/> Вихід</button>
+                    
+                    {/* Bottom Settings & Logout */}
+                    <div className="p-4 border-t space-y-1">
+                        <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3 rounded-xl text-sm font-semibold transition-all ${view==='settings' ? 'active sidebar-link' : 'text-slate-500 hover:bg-slate-50'}`}>
+                            <Icon name="settings" size={20}/> 
+                            <span>Налаштування</span>
+                        </button>
+                        <button onClick={()=>signOut(auth)} className="text-slate-400 hover:text-red-500 text-sm flex gap-2 w-full px-3 py-3 font-medium transition items-center"><Icon name="log-out" size={20}/> Вихід</button>
                     </div>
                 </aside>
 
                 <main className="flex-1 overflow-y-auto bg-[#F8FAFC] p-8 relative">
                     {statusMsg && (
                         <div className="fixed top-6 right-6 bg-slate-800 text-white px-6 py-4 rounded-xl shadow-2xl z-50 flex items-center gap-3 animate-bounce border border-slate-700">
-                            <Icon name="loader" className="animate-spin text-brand-500"/> 
-                            <span className="font-medium">{statusMsg}</span>
+                            <Icon name="loader" className="animate-spin text-brand-500"/> <span className="font-medium">{statusMsg}</span>
                         </div>
                     )}
 
@@ -309,17 +328,15 @@
                         {!loading && view === 'dashboard' && <DashboardView metrics={metrics} transactions={transactions} setView={setView} />}
                         {!loading && view === 'pnl' && <PnLView metrics={metrics} transactions={transactions} />}
                         {!loading && view === 'dividends' && <DividendsView metrics={metrics} transactions={transactions} setModalType={setModalType} />}
-                        {!loading && view === 'ops' && <OpsView transactions={transactions} deleteTx={deleteTx} syncMono={syncMono} />}
-                        {!loading && view === 'settings' && <SettingsView settings={settings} setSettings={setSettings} saveSettings={saveSettings} syncMono={syncMono} deleteAllTransactions={deleteAllTransactions} />}
+                        {!loading && view === 'ops' && <OpsView transactions={transactions} deleteTx={deleteTx} syncMono={syncMono} categories={categories} />}
+                        {!loading && view === 'settings' && <SettingsView settings={settings} setSettings={setSettings} saveSettings={saveSettings} syncMono={syncMono} deleteAllTransactions={deleteAllTransactions} categories={categories} saveCategories={saveCategories} />}
                     </div>
                 </main>
 
-                {modalType && <TransactionModal type={modalType} close={()=>setModalType(null)} />}
+                {modalType && <TransactionModal type={modalType} close={()=>setModalType(null)} categories={categories} />}
             </div>
         );
     };
-
-    // --- SUB-COMPONENTS ---
 
     const DashboardView = ({ metrics, transactions, setView }) => (
         <div className="space-y-8">
@@ -374,9 +391,11 @@
         </div>
     );
 
-    const SettingsView = ({ settings, setSettings, saveSettings, syncMono, deleteAllTransactions }) => {
+    const SettingsView = ({ settings, setSettings, saveSettings, syncMono, deleteAllTransactions, categories, saveCategories }) => {
         const [accounts, setAccounts] = useState([]);
         const [isLoadingAccs, setIsLoadingAccs] = useState(false);
+        const [newCatIncome, setNewCatIncome] = useState('');
+        const [newCatExpense, setNewCatExpense] = useState('');
 
         const fetchMonoAccounts = async () => {
             if(!settings.monoKey) return alert("Спочатку введіть X-Token!");
@@ -387,16 +406,67 @@
                 const data = await res.json();
                 if(data.accounts) {
                     setAccounts(data.accounts);
-                    alert("Рахунки завантажено! Оберіть потрібний зі списку.");
+                    alert("Рахунки завантажено! Оберіть потрібний.");
                 } else alert("Не вдалося отримати рахунки.");
             } catch (e) { alert("Помилка при запиті."); }
             setIsLoadingAccs(false);
         };
 
+        const addCat = (type) => {
+            const val = type === 'income' ? newCatIncome : newCatExpense;
+            if(!val) return;
+            const updated = { ...categories, [type]: [...categories[type], val] };
+            saveCategories(updated);
+            if(type==='income') setNewCatIncome(''); else setNewCatExpense('');
+        };
+
+        const removeCat = (type, name) => {
+            if(!confirm(`Видалити категорію "${name}"?`)) return;
+            const updated = { ...categories, [type]: categories[type].filter(c => c !== name) };
+            saveCategories(updated);
+        };
+
         return (
-            <div className="max-w-3xl mx-auto animate-fade-in space-y-6">
+            <div className="max-w-3xl mx-auto animate-fade-in space-y-8">
+                
+                {/* CATEGORIES SECTION */}
+                <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                    <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Icon name="tag"/> Управління категоріями</h2>
+                    <div className="grid md:grid-cols-2 gap-8">
+                        <div>
+                            <h3 className="font-bold text-sm text-emerald-600 uppercase mb-3">Доходи</h3>
+                            <div className="flex gap-2 mb-3">
+                                <input type="text" value={newCatIncome} onChange={e=>setNewCatIncome(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-emerald-500" placeholder="Нова категорія..."/>
+                                <button onClick={()=>addCat('income')} className="bg-emerald-500 text-white p-2 rounded-lg hover:bg-emerald-600"><Icon name="plus" size={16}/></button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {categories.income.map(c => (
+                                    <span key={c} className="bg-emerald-50 text-emerald-700 text-xs px-2 py-1 rounded border border-emerald-100 flex items-center gap-1">
+                                        {c} <button onClick={()=>removeCat('income',c)} className="hover:text-red-500"><Icon name="x" size={12}/></button>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-sm text-brand-500 uppercase mb-3">Витрати</h3>
+                            <div className="flex gap-2 mb-3">
+                                <input type="text" value={newCatExpense} onChange={e=>setNewCatExpense(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm outline-none focus:border-brand-500" placeholder="Нова категорія..."/>
+                                <button onClick={()=>addCat('expense')} className="bg-brand-500 text-white p-2 rounded-lg hover:bg-brand-600"><Icon name="plus" size={16}/></button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {categories.expense.map(c => (
+                                    <span key={c} className="bg-orange-50 text-brand-600 text-xs px-2 py-1 rounded border border-orange-100 flex items-center gap-1">
+                                        {c} <button onClick={()=>removeCat('expense',c)} className="hover:text-red-500"><Icon name="x" size={12}/></button>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
                     <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><Icon name="link"/> Інтеграції</h2>
+                    
                     <div className="mb-8 border-b border-slate-100 pb-8">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center shadow-lg"><div className="w-8 h-8 logo-mono"></div></div>
@@ -423,6 +493,7 @@
                             </div>
                         </div>
                     </div>
+
                     <div className="mb-8">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="w-12 h-12 bg-white border border-slate-100 rounded-xl flex items-center justify-center shadow-sm"><div className="w-10 h-10 logo-nova"></div></div>
@@ -433,11 +504,13 @@
                             <input type="password" value={settings.novaKey} onChange={e=>setSettings({...settings, novaKey:e.target.value})} className="w-full border border-slate-200 rounded-lg px-4 py-2 text-sm outline-none focus:border-brand-500" placeholder="Ключ NovaPay..." />
                         </div>
                     </div>
+
                     <div className="flex gap-4 pt-2">
                         <button onClick={()=>saveSettings(settings)} className="flex-1 bg-slate-900 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-slate-800 transition flex items-center justify-center gap-2"><Icon name="save" size={18}/> 3. Зберегти</button>
                         <button onClick={syncMono} disabled={!settings.monoAccountId} className="flex-1 bg-brand-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-brand-600 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"><Icon name="refresh-cw" size={18}/> 4. Синхронізувати</button>
                     </div>
                 </div>
+
                 <div className="bg-red-50 p-8 rounded-3xl shadow-sm border border-red-100 mt-8">
                     <h3 className="text-red-700 font-bold mb-2 flex items-center gap-2"><Icon name="alert-triangle"/> Небезпечна зона</h3>
                     <p className="text-xs text-red-600 mb-4">Якщо ви завантажили зайві транзакції з інших карток, натисніть цю кнопку, щоб очистити базу і почати заново.</p>
@@ -449,8 +522,7 @@
         );
     };
 
-    // --- OPS VIEW (ОНОВЛЕНО З ФІЛЬТРАМИ) ---
-    const OpsView = ({ transactions, deleteTx, syncMono }) => {
+    const OpsView = ({ transactions, deleteTx, syncMono, categories }) => {
         const [isSyncing, setIsSyncing] = useState(false);
         const [filters, setFilters] = useState({ date: '', source: 'all', type: 'all', min: '', max: '' });
 
@@ -478,7 +550,6 @@
 
         return (
             <div className="space-y-4 animate-fade-in">
-                {/* FILTER BAR */}
                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-wrap gap-4 items-center justify-between">
                     <div className="flex flex-wrap gap-2 items-center">
                         <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
@@ -511,7 +582,6 @@
                     </button>
                 </div>
 
-                {/* TABLE */}
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
                     {filtered.length === 0 ? <div className="p-10 text-center text-slate-400 font-bold">Операцій не знайдено</div> :
                     <table className="w-full text-left">
@@ -582,7 +652,7 @@
         </div>
     );
 
-    const TransactionModal = ({ type, close }) => {
+    const TransactionModal = ({ type, close, categories }) => {
         const [form, setForm] = useState({ amount: '', desc: '', cat: 'Інше', source: 'Monobank ФОП' });
         const submit = async () => {
             if(!form.amount) return;
@@ -602,7 +672,8 @@
         };
         const title = type==='dividend' ? 'Виплата дивідендів' : (type==='income' ? 'Новий дохід' : 'Нова витрата');
         const theme = type==='dividend' ? 'bg-slate-900' : (type==='income' ? 'bg-emerald-500' : 'bg-brand-500');
-        const cats = type==='income' ? ['Продажі', 'Кешбек', 'Повернення', 'Інше'] : ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Інше'];
+        const cats = type==='income' ? categories.income : categories.expense;
+        
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={close}></div>
