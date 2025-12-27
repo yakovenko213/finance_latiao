@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Latiao Finance | Seasonal v13.5</title>
+    <title>Latiao Finance | Global Sync v13.6</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -118,13 +118,13 @@
         expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Знижки', 'Інше']
     };
 
-    // Updated ALL_VIEWS: More mobile access
+    // Updated ALL_VIEWS: Dividends hidden from mobile navbar
     const ALL_VIEWS = [
         {id:'dashboard', label:'Огляд', icon:'layout-grid', mobile: true},
         {id:'ops', label:'Операції', icon:'list-checks', mobile: true},
         {id:'pnl', label:'P&L', icon:'pie-chart', mobile: true},
-        {id:'cashflow', label:'CashFlow', icon:'banknote', mobile: true}, // Enabled for mobile
-        {id:'dividends', label:'Дивіденди', icon:'gem', mobile: true}, // Enabled for mobile
+        {id:'cashflow', label:'CashFlow', icon:'banknote', mobile: true},
+        {id:'dividends', label:'Дивіденди', icon:'gem', mobile: false}, // HIDDEN ON MOBILE NAV
         {id:'managers', label:'Команда', icon:'users-round', mobile: false},
         {id:'settings', label:'Налаштування', icon:'sliders-horizontal', mobile: true}
     ];
@@ -135,10 +135,10 @@
 
         const particles = useMemo(() => {
             const items = [];
-            const count = 20; // Number of particles
+            const count = 20; 
             for (let i = 0; i < count; i++) {
                 const left = Math.random() * 100;
-                const animDuration = 5 + Math.random() * 10; // 5-15s
+                const animDuration = 5 + Math.random() * 10;
                 const delay = Math.random() * 5;
                 const size = 10 + Math.random() * 20;
                 items.push({ id: i, left, animDuration, delay, size });
@@ -167,7 +167,7 @@
 
     const DashboardView = ({ metrics, transactions, setView }) => {
         const isHealthy = metrics.margin > 20;
-        const healthStatus = isHealthy ? "Чудовий" : (metrics.margin > 0 ? "Норма" : "Критично");
+        const healthStatus = isHealthy ? "Чудовий" : (metrics.margin > 0 ? "Нормальний" : "Критичний");
         const healthColor = isHealthy ? "text-emerald-600 dark:text-emerald-400" : (metrics.margin > 0 ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400");
 
         return (
@@ -187,7 +187,7 @@
                         <div className="mt-2 text-xs font-bold bg-slate-100 dark:bg-slate-700 dark:text-slate-200 inline-block px-2 py-1 rounded">Маржа: {metrics.margin}%</div>
                     </div>
 
-                    <div className="card-modern p-6 border-t-4 border-t-brand-500">
+                    <div className="card-modern p-6">
                         <div className="text-slate-400 text-xs font-bold uppercase mb-2">Запас ходу</div>
                         <div className="text-3xl font-mono font-bold text-brand-500">{metrics.runway} днів</div>
                         <p className="text-xs text-slate-400 mt-2">Без нових продажів</p>
@@ -278,6 +278,7 @@
                 <div className="card-modern p-6 border-l-8 border-l-emerald-500">
                     <div className="text-sm font-bold text-emerald-700 dark:text-emerald-400 uppercase mb-1">Виручка (Total Revenue)</div>
                     <div className="text-4xl font-mono font-bold text-slate-900 dark:text-white">+{metrics.revenue.toLocaleString()} ₴</div>
+                    <p className="text-xs text-slate-400 mt-1">Оборот "брудними"</p>
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
@@ -311,7 +312,6 @@
                      </div>
                 </div>
 
-                {/* Fixed Layout for Net Profit on Mobile */}
                 <div className="bg-slate-900 dark:bg-slate-800 text-white p-8 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
                     <div>
                         <div className="text-sm font-bold text-slate-400 uppercase mb-1">(=) Чистий Прибуток</div>
@@ -416,22 +416,20 @@
 
         return (
             <div className="space-y-6 animate-fade-in pb-24 md:pb-0">
+                {/* Mobile Friendly Filter Bar */}
                 <div className="card-modern p-4 bg-slate-50 dark:bg-slate-800 sticky top-0 z-20 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center">
                     <div className="flex gap-2 overflow-x-auto no-scrollbar flex-1 pb-2 md:pb-0">
                         <input type="date" className="bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-lg px-2 py-2 text-xs min-w-[120px]" value={filters.date} onChange={e=>setFilters({...filters, date:e.target.value})} />
                         <select className="bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-lg px-2 py-2 text-xs" value={filters.type} onChange={e=>setFilters({...filters, type:e.target.value})}><option value="all">Всі типи</option><option value="income">Дохід</option><option value="expense">Витрата</option></select>
                         {(filters.date||filters.type!=='all')&&<button onClick={()=>setFilters({date:'',source:'all',type:'all'})} className="text-red-500 text-xs font-bold px-2 whitespace-nowrap">Скинути</button>}
                     </div>
-                    <button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 dark:bg-slate-700 text-white px-4 py-3 md:py-2 rounded-lg text-xs font-bold whitespace-nowrap flex items-center justify-center gap-2 shadow-md w-full md:w-auto hover:bg-slate-800 transition active:scale-95">
-                        <Icon name="refresh-cw" size={14} className={isSyncing?"animate-spin":""}/> 
-                        {isSyncing ? "Завантаження..." : "Синхронізація"}
-                    </button>
+                    <button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 dark:bg-slate-700 text-white px-3 py-3 md:py-2 rounded-lg text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 shadow-md w-full md:w-auto"><Icon name="refresh-cw" size={14} className={isSyncing?"animate-spin":""}/> Синхронізація</button>
                 </div>
 
                 <div className="card-modern overflow-hidden">
                     <div className="divide-y divide-slate-100 dark:divide-slate-700">
                         {paginatedData.map(t => (
-                            <div key={t.id} className="p-4 flex justify-between items-start active:bg-slate-50 transition hover:bg-slate-50 dark:hover:bg-slate-800">
+                            <div key={t.id} className="p-4 flex justify-between items-start hover:bg-slate-50 dark:hover:bg-slate-800 transition">
                                 <div>
                                     <div className="font-bold text-sm text-slate-800 dark:text-slate-200 line-clamp-1">{t.description}</div>
                                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex gap-2">
@@ -526,13 +524,22 @@
         );
     };
 
-    const SettingsView = ({ settings, setSettings, saveSettings, syncMono, deleteAllTransactions, categories, saveCategories, themeEffect, setThemeEffect }) => {
+    const SettingsView = ({ settings, setSettings, saveSettings, syncMono, deleteAllTransactions, categories, saveCategories, themeEffect, setThemeEffect, setView }) => {
         const [newCatIn, setNewCatIn] = useState(''); const [newCatOut, setNewCatOut] = useState('');
         const addCat = (t, v, setter) => { if(!v) return; saveCategories({...categories, [t]: [...(categories?.[t]||[]), v]}); setter(''); };
         const removeCat = (t, v) => { if(confirm('Видалити?')) saveCategories({...categories, [t]: categories[t].filter(c=>c!==v)}); };
         return (
             <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-0">
                 
+                {/* Mobile Dividends Button */}
+                <div className="md:hidden card-modern p-4 flex items-center justify-between active:bg-slate-50 transition" onClick={()=>setView('dividends')}>
+                    <div className="flex items-center gap-3">
+                        <div className="bg-indigo-100 p-2 rounded-xl text-indigo-600"><Icon name="gem" size={24}/></div>
+                        <span className="font-bold text-slate-800 dark:text-white">Перейти до Дивідендів</span>
+                    </div>
+                    <Icon name="chevron-right" size={20} className="text-slate-400"/>
+                </div>
+
                 {/* SEASONAL THEME SELECTOR */}
                 <div className="card-modern p-6">
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><Icon name="palette"/> Атмосфера (Тема)</h2>
@@ -599,25 +606,17 @@
         const [email, setEmail] = useState('');
         const [pass, setPass] = useState('');
         const [modalType, setModalType] = useState(null);
-        const [themeEffect, setThemeEffect] = useState('none'); // State for effects
+        const [themeEffect, setThemeEffect] = useState('none'); 
         
-        // DARK MODE INIT
+        // DARK MODE INIT & THEME LOAD
         useEffect(() => {
             if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 document.documentElement.classList.add('dark');
             }
-            // Load effect preference
-            const savedEffect = localStorage.getItem('latiao_theme_effect');
-            if (savedEffect) setThemeEffect(savedEffect);
         }, []);
 
         const toggleTheme = () => {
             document.documentElement.classList.toggle('dark');
-        };
-        
-        const saveThemeEffect = (effect) => {
-            setThemeEffect(effect);
-            localStorage.setItem('latiao_theme_effect', effect);
         };
 
         useEffect(() => {
@@ -628,7 +627,13 @@
         }, []);
 
         const loadData = async () => {
-            setLoading(true); try { const sSnap = await getDoc(doc(db, "settings", "global")); if (sSnap.exists()) setSettings(sSnap.data()); const cSnap = await getDoc(doc(db, "settings", "categories")); if (cSnap.exists()) setCategories(cSnap.data()); else await setDoc(doc(db, "settings", "categories"), DEFAULT_CATEGORIES); const q = query(collection(db, "transactions")); onSnapshot(q, (snap) => { const list = snap.docs.map(d => ({ id: d.id, ...d.data() })); list.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)); setTransactions(list); setLoading(false); }); } catch (e) { console.error(e); setLoading(false); }
+            setLoading(true); try { const sSnap = await getDoc(doc(db, "settings", "global")); if (sSnap.exists()) { setSettings(sSnap.data()); if(sSnap.data().themeEffect) setThemeEffect(sSnap.data().themeEffect); } const cSnap = await getDoc(doc(db, "settings", "categories")); if (cSnap.exists()) setCategories(cSnap.data()); else await setDoc(doc(db, "settings", "categories"), DEFAULT_CATEGORIES); const q = query(collection(db, "transactions")); onSnapshot(q, (snap) => { const list = snap.docs.map(d => ({ id: d.id, ...d.data() })); list.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)); setTransactions(list); setLoading(false); }); } catch (e) { console.error(e); setLoading(false); }
+        };
+
+        // SAVE THEME GLOBALLY
+        const saveGlobalTheme = async (effect) => {
+            setThemeEffect(effect);
+            await setDoc(doc(db, "settings", "global"), { ...settings, themeEffect: effect }, { merge: true });
         };
 
         const metrics = useMemo(() => {
@@ -678,7 +683,7 @@
                 <SeasonalEffects effect={themeEffect} />
                 <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-brand-500/20 rounded-full blur-[120px] animate-pulse"></div>
                 <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px]"></div>
-                <div className="bg-white/5 backdrop-blur-xl p-10 rounded-[32px] w-full max-w-sm text-center border border-white/10 shadow-2xl relative z-10"><div className="mb-8 flex flex-col items-center"><div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/30 mb-4 transform rotate-3 relative"><Icon name="flame" size={40} className="text-white absolute -top-1 -right-1 opacity-80"/><span className="text-4xl font-extrabold text-white">L</span></div><h1 className="text-3xl font-extrabold text-white">Latiao Finance</h1><p className="text-slate-400 text-sm mt-2 font-medium">Корпоративна система обліку</p></div><form onSubmit={handleLogin} className="space-y-4"><div className="relative"><Icon name="mail" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="email" placeholder="Email або Логін" value={email} onChange={e=>setEmail(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div><div className="relative"><Icon name="lock" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="password" placeholder="Пароль" value={pass} onChange={e=>setPass(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div><button type="submit" className="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white py-4 rounded-2xl font-bold transition shadow-lg shadow-brand-500/20 active:scale-[0.98] mt-2 flex items-center justify-center gap-2">{loading ? <Icon name="loader" className="animate-spin"/> : <Icon name="log-in"/>} Увійти в систему</button></form></div>
+                <div className="bg-white/5 backdrop-blur-xl p-10 rounded-[32px] w-full max-w-sm text-center border border-white/10 shadow-2xl relative z-10"><div className="mb-8 flex flex-col items-center"><div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/30 mb-4 transform rotate-3 relative"><Icon name="flame" size={40} className="text-white absolute -top-1 -right-1 opacity-80"/><span className="text-4xl font-extrabold text-white">L</span></div><h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">Latiao <span className="text-brand-500">Фінанси</span></h1><p className="text-slate-400 text-sm mt-2 font-medium">Корпоративна система обліку</p></div><form onSubmit={handleLogin} className="space-y-4"><div className="relative"><Icon name="mail" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="email" placeholder="Email або Логін" value={email} onChange={e=>setEmail(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div><div className="relative"><Icon name="lock" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="password" placeholder="Пароль" value={pass} onChange={e=>setPass(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div><button type="submit" className="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white py-4 rounded-2xl font-bold transition shadow-lg shadow-brand-500/20 active:scale-[0.98] mt-2 flex items-center justify-center gap-2">{loading ? <Icon name="loader" className="animate-spin"/> : <Icon name="log-in"/>} Увійти в систему</button></form></div>
             </div>
         );
 
@@ -692,7 +697,7 @@
                     <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto py-4"><div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider">Основне</div>{ALL_VIEWS.filter(v => canAccess(v.id) && v.id !== 'settings' && v.id !== 'managers').map(item => (<button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view===item.id ? 'active' : 'text-slate-500 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-slate-800 hover:text-brand-600'}`}><Icon name={item.icon} size={20} className={`transition-transform group-hover:scale-110 ${view===item.id ? '' : 'opacity-70 group-hover:opacity-100'}`}/> <span className="capitalize">{item.label}</span></button>))}</nav>
                     <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5 pb-8">
                         <button onClick={toggleTheme} className="w-full flex items-center gap-3 p-3.5 text-sm font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"><Icon name="moon" size={20}/> Перемкнути тему</button>
-                        <div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider mt-4">Адміністрування</div>{canAccess('managers') && <button onClick={()=>setView('managers')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='managers'?'active':'text-slate-500 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-slate-800 hover:text-brand-600'}`}><Icon name="users-round" size={20} className={`transition-transform group-hover:scale-110 ${view==='managers'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Команда</span></button>}{canAccess('settings') && <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='settings'?'active':'text-slate-500 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-slate-800 hover:text-brand-600'}`}><Icon name="settings" size={20} className={`transition-transform group-hover:scale-110 ${view==='settings'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Налаштування</span></button>}<button onClick={handleLogout} className="w-full flex items-center gap-3 p-3.5 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all sidebar-link mt-4 group"><Icon name="log-out" size={20} className="opacity-70 group-hover:opacity-100 transition-transform group-hover:translate-x-1"/> Вихід з системи</button></div>
+                        <div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider mt-4">Адміністрування</div>{canAccess('managers') && <button onClick={()=>setView('managers')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='managers'?'active':'text-slate-500 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-slate-800 hover:text-brand-600'}`}><Icon name="users-round" size={20} className={`transition-transform group-hover:scale-110 ${view==='managers'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Команда</span></button>}{canAccess('settings') && <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='settings'?'active':'text-slate-500 dark:text-slate-400 hover:bg-brand-50 dark:hover:bg-slate-800 hover:text-brand-600'}`}><Icon name="sliders-horizontal" size={20} className={`transition-transform group-hover:scale-110 ${view==='settings'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Налаштування</span></button>}<button onClick={handleLogout} className="w-full flex items-center gap-3 p-3.5 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all sidebar-link mt-4 group"><Icon name="log-out" size={20} className="opacity-70 group-hover:opacity-100 transition-transform group-hover:translate-x-1"/> Вихід з системи</button></div>
                 </aside>
                 
                 <main className="flex-1 overflow-y-auto p-4 md:p-8 relative scroll-smooth no-scrollbar">
@@ -706,7 +711,7 @@
                             {view==='cashflow' && <CashFlowView metrics={metrics}/>}
                             {view==='dividends' && <DividendsView metrics={metrics} transactions={transactions} setModalType={setModalType}/>}
                             {view==='ops' && <OpsView transactions={transactions} deleteTx={deleteTx} syncMono={syncM} canDelete={currentUser?.role==='admin'} categories={categories}/>}
-                            {view==='settings' && <SettingsView settings={settings} setSettings={setSettings} saveSettings={saveS} syncMono={syncM} deleteAllTransactions={delAll} categories={categories} saveCategories={saveC} themeEffect={themeEffect} setThemeEffect={saveThemeEffect}/>}
+                            {view==='settings' && <SettingsView settings={settings} setSettings={setSettings} saveSettings={saveS} syncMono={syncM} deleteAllTransactions={delAll} categories={categories} saveCategories={saveC} themeEffect={themeEffect} setThemeEffect={saveGlobalTheme} setView={setView}/>}
                             {view==='managers' && <ManagersView db={db}/>}
                         </div>
                     </div>
