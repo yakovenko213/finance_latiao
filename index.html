@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html lang="uk">
-<head> 
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao Фінанси v2.0 (Pro Design + Multi-Account)</title>
+    <title>Latiao Фінанси v2.1 (Stable)</title>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.263.1/lucide.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -17,7 +16,6 @@
         /* Custom Colors */
         .text-latiao { color: #FF5722; }
         .bg-latiao { background-color: #FF5722; }
-        .hover-bg-latiao:hover { background-color: #E64A19; }
         
         /* Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -33,27 +31,37 @@
             animation: spin 0.8s linear infinite;
         }
 
-        /* Glassmorphism for Modal */
         .modal-backdrop {
             background-color: rgba(15, 23, 42, 0.4);
             backdrop-filter: blur(4px);
         }
         
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
-        const { Wallet, CreditCard, ArrowUpRight, ArrowDownLeft, Settings: SettingsIcon, LayoutDashboard, List, PieChart, DollarSign, LogOut, Check, AlertCircle } = lucide;
+        const { useState, useEffect } = React;
 
-        // --- CONSTANTS & ASSETS ---
+        // --- ICONS (Inline SVG to prevent crashes) ---
+        const Icons = {
+            Dashboard: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>,
+            List: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>,
+            PieChart: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>,
+            ArrowUpRight: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>,
+            DollarSign: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>,
+            Settings: () => <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Check: () => <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+            Alert: () => <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>,
+            IncomeArrow: () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="7" y1="7" x2="17" y2="17"></line><polyline points="17 7 17 17 7 17"></polyline></svg>,
+            ExpenseArrow: () => <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+        };
+
+        // --- CONSTANTS ---
         const LOGO_MONO = "https://multicast.com.ua/wp-content/uploads/2024/04/monobank-logo.png";
         const LOGO_NOVA = "https://novapay.credit/wp-content/uploads/2023/10/cropped-cropped-logo.png";
         
@@ -62,33 +70,39 @@
             expense: ['Закупівля (COGS)', 'Реклама (Ads)', 'Доставка (Логістика)', 'Пакування', 'Комісії', 'Податки', 'Оренда', 'Зарплата', 'Сервіси', 'Інше']
         };
 
-        // --- API HELPERS ---
-        
-        // 1. Отримання списку рахунків (Client Info)
+        // --- SAFE STORAGE HELPERS ---
+        const safeJSONParse = (key, fallback) => {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : fallback;
+            } catch (e) {
+                console.error("Storage Error", e);
+                return fallback;
+            }
+        };
+
+        // --- API LOGIC ---
         const fetchMonoAccounts = async (token) => {
             try {
                 const response = await fetch('https://api.monobank.ua/personal/client-info', {
                     method: 'GET',
                     headers: { 'X-Token': token }
                 });
-                if (!response.ok) throw new Error('CORS or Auth Error');
+                if (!response.ok) throw new Error('API Error');
                 const data = await response.json();
-                return data.accounts; // Повертає масив рахунків
+                return data.accounts;
             } catch (e) {
-                console.warn("API Error (likely CORS), switching to Mock Accounts");
-                // Mock Accounts for Demo
+                console.warn("API Fail/CORS -> Mocking Accounts");
                 return [
-                    { id: 'acc_1', currencyCode: 980, balance: 4520000, type: 'black', iban: 'UA52320000000002600123456789' }, // 45 200 UAH
-                    { id: 'acc_2', currencyCode: 980, balance: 1250000, type: 'fop', iban: 'UA12320000000002600987654321' },  // 12 500 UAH
-                    { id: 'acc_3', currencyCode: 840, balance: 15000, type: 'white', iban: 'UA99320000000002600555555555' }   // 150 USD
+                    { id: 'acc_1', currencyCode: 980, balance: 4520000, type: 'black', iban: 'UA52320000000002600123456789' },
+                    { id: 'acc_2', currencyCode: 980, balance: 1250000, type: 'fop', iban: 'UA12320000000002600987654321' }
                 ];
             }
         };
 
-        // 2. Отримання виписки (Statement)
         const fetchMonoStatement = async (token, accountId) => {
             const now = Math.floor(Date.now() / 1000);
-            const monthAgo = now - (31 * 24 * 60 * 60); // Максимум 31 день
+            const monthAgo = now - (31 * 24 * 60 * 60); 
             
             try {
                 const response = await fetch(`https://api.monobank.ua/personal/statement/${accountId}/${monthAgo}/${now}`, {
@@ -109,14 +123,12 @@
                     status: 'pending'
                 }));
             } catch (e) {
-                // Fallback Mock Transactions
-                console.warn("Using Mock Transactions");
+                console.warn("API Fail/CORS -> Mocking Transactions");
                 return [
                     { id: Date.now() + 1, date: '2025-12-27', amount: -4500, type: 'expense', category: 'Реклама (Ads)', source: 'monobank', description: 'FACEBOOK ADS *I5521', status: 'confirmed' },
                     { id: Date.now() + 2, date: '2025-12-27', amount: -20, type: 'expense', category: 'Комісії', source: 'monobank', description: 'Комісія за переказ', status: 'confirmed' },
-                    { id: Date.now() + 3, date: '2025-12-26', amount: 12500, type: 'income', category: null, source: 'monobank', description: 'Зарахування від NovaPay', status: 'pending' },
-                    { id: Date.now() + 4, date: '2025-12-25', amount: -1200, type: 'expense', category: 'Закупівля (COGS)', source: 'monobank', description: 'Оплата постачальнику', status: 'confirmed' },
-                    { id: Date.now() + 5, date: '2025-12-24', amount: 8400, type: 'income', category: 'Продажі', source: 'monobank', description: 'Оплата замовлення #404', status: 'confirmed' },
+                    { id: Date.now() + 3, date: '2025-12-26', amount: 12500, type: 'income', category: null, source: 'monobank', description: 'Зарахування коштів', status: 'pending' },
+                    { id: Date.now() + 4, date: '2025-12-25', amount: 8400, type: 'income', category: 'Продажі', source: 'monobank', description: 'Оплата замовлення', status: 'confirmed' },
                 ];
             }
         };
@@ -134,16 +146,18 @@
                 </div>
                 <nav className="flex-1 px-4 space-y-1">
                     {[
-                        { id: 'Дашборд', icon: LayoutDashboard },
-                        { id: 'Операції', icon: List },
-                        { id: 'P&L Звіт', icon: PieChart },
-                        { id: 'Cash Flow', icon: ArrowUpRight },
-                        { id: 'Дивіденди', icon: DollarSign },
+                        { id: 'Дашборд', icon: Icons.Dashboard },
+                        { id: 'Операції', icon: Icons.List },
+                        { id: 'P&L Звіт', icon: Icons.PieChart },
+                        { id: 'Cash Flow', icon: Icons.ArrowUpRight },
+                        { id: 'Дивіденди', icon: Icons.DollarSign },
                     ].map((item) => (
                         <div key={item.id} onClick={() => setActiveTab(item.id)}
                             className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 group
                             ${activeTab === item.id ? 'bg-orange-50 text-latiao font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}>
-                            <item.icon size={20} className={activeTab === item.id ? 'text-latiao' : 'text-slate-400 group-hover:text-slate-600'} />
+                            <div className={activeTab === item.id ? 'text-latiao' : 'text-slate-400 group-hover:text-slate-600'}>
+                                <item.icon />
+                            </div>
                             {item.id}
                         </div>
                     ))}
@@ -152,7 +166,7 @@
                         <div onClick={() => setActiveTab('Налаштування')}
                             className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200
                             ${activeTab === 'Налаштування' ? 'bg-slate-100 text-slate-800 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}>
-                            <SettingsIcon size={20} />
+                            <Icons.Settings />
                             Налаштування
                         </div>
                     </div>
@@ -220,12 +234,12 @@
                                 <button onClick={() => setType('income')} 
                                     className={`py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2
                                     ${type === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                    <ArrowDownLeft size={16} /> Надходження
+                                    <Icons.IncomeArrow /> Надходження
                                 </button>
                                 <button onClick={() => setType('expense')} 
                                     className={`py-2.5 rounded-lg text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2
                                     ${type === 'expense' ? 'bg-white text-red-500 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                                    <ArrowUpRight size={16} /> Витрата
+                                    <Icons.ExpenseArrow /> Витрата
                                 </button>
                             </div>
 
@@ -251,7 +265,7 @@
         };
 
         const Settings = ({ connections, onConnect }) => {
-            const [step, setStep] = useState('token'); // token -> accounts -> connected
+            const [step, setStep] = useState('token');
             const [key, setKey] = useState('');
             const [accounts, setAccounts] = useState([]);
             const [loading, setLoading] = useState(false);
@@ -267,7 +281,7 @@
                     setAccounts(fetchedAccounts);
                     setStep('accounts');
                 } else {
-                    setError('Не вдалося отримати рахунки. Перевірте токен.');
+                    setError('Не вдалося отримати рахунки або API недоступне.');
                 }
             };
 
@@ -293,12 +307,11 @@
                                     <h3 className="text-lg font-bold text-slate-800">Monobank API</h3>
                                     <p className="text-sm text-slate-500">Автоматичний імпорт виписок</p>
                                 </div>
-                                {connections.mono && <span className="ml-auto bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200 flex items-center gap-1">ACTIVE <Check size={12}/></span>}
+                                {connections.mono && <span className="ml-auto bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200 flex items-center gap-1">ACTIVE <Icons.Check /></span>}
                             </div>
                         </div>
 
                         <div className="p-8">
-                            {/* STEP 1: TOKEN INPUT */}
                             {!connections.mono && step === 'token' && (
                                 <div className="space-y-4 max-w-md">
                                     <div>
@@ -308,7 +321,7 @@
                                             placeholder="u3..." />
                                         <p className="text-xs text-slate-400 mt-2">Токен можна отримати на api.monobank.ua</p>
                                     </div>
-                                    {error && <div className="text-red-500 text-sm flex items-center gap-2"><AlertCircle size={14}/> {error}</div>}
+                                    {error && <div className="text-red-500 text-sm flex items-center gap-2"><Icons.Alert /> {error}</div>}
                                     <button onClick={handleCheckToken} disabled={loading || !key} 
                                         className="w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all flex justify-center items-center">
                                         {loading ? <div className="spinner"></div> : 'Далі: Вибір рахунку'}
@@ -316,7 +329,6 @@
                                 </div>
                             )}
 
-                            {/* STEP 2: ACCOUNT SELECTION */}
                             {!connections.mono && step === 'accounts' && (
                                 <div className="space-y-4">
                                     <h4 className="font-bold text-slate-700">Оберіть рахунок для синхронізації:</h4>
@@ -337,13 +349,16 @@
                                 </div>
                             )}
 
-                            {/* STEP 3: SUCCESS */}
                             {connections.mono && (
                                 <div className="text-center py-8">
                                     <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">✓</div>
                                     <h4 className="text-xl font-bold text-slate-800 mb-2">Інтеграцію налаштовано!</h4>
                                     <p className="text-slate-500 mb-6">Транзакції за останні 31 день успішно завантажено.</p>
-                                    <button onClick={() => window.location.reload()} className="text-red-500 text-sm font-medium hover:text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-all">
+                                    <button onClick={() => { 
+                                        localStorage.removeItem('latiao_v2_tx');
+                                        localStorage.removeItem('latiao_v2_conn');
+                                        window.location.reload(); 
+                                    }} className="text-red-500 text-sm font-medium hover:text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-all">
                                         Відключити та скинути
                                     </button>
                                 </div>
@@ -354,31 +369,25 @@
             );
         };
 
-        // --- MAIN APP COMPONENT ---
         const App = () => {
             const [activeTab, setActiveTab] = useState('Операції');
             
-            // STATE WITH PERSISTENCE
-            const [transactions, setTransactions] = useState(() => JSON.parse(localStorage.getItem('latiao_v2_tx')) || []);
-            const [connections, setConnections] = useState(() => JSON.parse(localStorage.getItem('latiao_v2_conn')) || { mono: false, nova: false });
-            const [selectedAccountId, setSelectedAccountId] = useState(() => localStorage.getItem('latiao_v2_acc_id') || null);
-            
+            // Safe Storage Loading
+            const [transactions, setTransactions] = useState(() => safeJSONParse('latiao_v2_tx', []));
+            const [connections, setConnections] = useState(() => safeJSONParse('latiao_v2_conn', { mono: false, nova: false }));
             const [editingTransaction, setEditingTransaction] = useState(null);
 
             useEffect(() => localStorage.setItem('latiao_v2_tx', JSON.stringify(transactions)), [transactions]);
             useEffect(() => localStorage.setItem('latiao_v2_conn', JSON.stringify(connections)), [connections]);
-            useEffect(() => { if(selectedAccountId) localStorage.setItem('latiao_v2_acc_id', selectedAccountId) }, [selectedAccountId]);
 
             const handleConnection = async (type, token, accountId) => {
                 if (type === 'mono') {
                     const data = await fetchMonoStatement(token, accountId);
                     setTransactions(prev => {
-                         // Merge strategy: remove old mono transactions and replace with new fetch to avoid duplicates logic complexity
                          const others = prev.filter(t => t.source !== 'monobank');
                          return [...data, ...others].sort((a,b) => new Date(b.date) - new Date(a.date));
                     });
                     setConnections(prev => ({ ...prev, mono: true }));
-                    setSelectedAccountId(accountId);
                 }
             };
 
@@ -387,7 +396,6 @@
                 setEditingTransaction(null);
             };
 
-            // Computed Stats
             const revenue = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Math.abs(t.amount), 0);
             const expenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
             const profit = revenue - expenses;
@@ -397,7 +405,6 @@
                     <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} connections={connections} />
                     
                     <main className="flex-1 ml-64 p-10 overflow-y-auto h-screen">
-                        {/* Header */}
                         <header className="flex justify-between items-center mb-10 animate-fade-in">
                             <div>
                                 <h2 className="text-3xl font-bold text-slate-800">{activeTab}</h2>
@@ -412,7 +419,6 @@
                             </div>
                         </header>
 
-                        {/* Content Area */}
                         {activeTab === 'Дашборд' && (
                              <div className="space-y-6 animate-fade-in">
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -454,7 +460,7 @@
                                                 <td className="p-5">
                                                     {!t.category ? (
                                                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-orange-50 text-orange-600 text-xs font-bold border border-orange-100 group-hover:bg-orange-100 transition-colors">
-                                                            <AlertCircle size={10} /> Класифікувати
+                                                            <Icons.Alert /> Класифікувати
                                                         </span>
                                                     ) : (
                                                         <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-medium border border-slate-200">{t.category}</span>
