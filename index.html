@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Latiao Finance | Mobile Optimized v13.1</title>
+    <title>Latiao Finance | Security Update v13.2</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -107,7 +107,7 @@
         {id:'settings', label:'Налаштування', icon:'sliders-horizontal', mobile: true}
     ];
 
-    // --- COMPONENTS ---
+    // --- VIEW COMPONENTS ---
 
     const DashboardView = ({ metrics, transactions, setView }) => {
         const isHealthy = metrics.margin > 20;
@@ -137,6 +137,11 @@
                         <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Запас ходу</div>
                         <div className="text-3xl font-mono font-bold text-brand-600 tracking-tight">{metrics.runway} <span className="text-lg text-slate-500 font-sans font-bold">днів</span></div>
                     </div>
+                    <div className="card-modern p-6 relative overflow-hidden border-t-4 border-t-blue-500">
+                         <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Основна витрата</div>
+                         <div className="text-xl font-bold text-slate-800 line-clamp-1">{metrics.topExpense.name}</div>
+                         <div className="text-sm font-mono text-red-500 font-bold mt-1">-{metrics.topExpense.val.toLocaleString()} ₴</div>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -158,24 +163,23 @@
                         </div>
                     </div>
 
-                    <div className="card-modern overflow-hidden">
-                        <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 className="font-bold text-lg text-slate-800">Історія</h3>
-                            <button onClick={()=>setView('ops')} className="text-xs font-bold text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">Всі</button>
-                        </div>
-                        <div className="overflow-x-auto">
-                            {transactions.slice(0, 5).map(t => (
-                                <div key={t.id} className="flex justify-between items-center p-4 border-b border-slate-50 last:border-0 active:bg-slate-50">
-                                    <div>
-                                        <div className="font-bold text-sm text-slate-700 truncate max-w-[150px]">{t.description}</div>
-                                        <div className="text-xs text-slate-400 mt-0.5">{t.date} • {t.cat}</div>
-                                    </div>
-                                    <div className={`font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>
-                                        {t.type==='income'?'+':'-'}{(Number(t.amount)||0).toLocaleString()}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                    <div className="card-modern overflow-hidden flex flex-col justify-between">
+                         <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+                             <h3 className="font-bold text-lg text-slate-800">Ключові метрики</h3>
+                         </div>
+                         <div className="p-6 grid grid-cols-2 gap-4">
+                             <div className="p-3 bg-brand-50 rounded-xl text-center">
+                                 <div className="text-xs text-brand-600 font-bold uppercase mb-1">Середній чек</div>
+                                 <div className="text-xl font-mono font-bold text-brand-700">{metrics.avgTicket.toLocaleString()} ₴</div>
+                             </div>
+                             <div className="p-3 bg-slate-50 rounded-xl text-center">
+                                 <div className="text-xs text-slate-500 font-bold uppercase mb-1">Всього витрат</div>
+                                 <div className="text-xl font-mono font-bold text-slate-700">{metrics.totalExpense.toLocaleString()} ₴</div>
+                             </div>
+                         </div>
+                         <div className="px-6 pb-6">
+                            <button onClick={()=>setView('pnl')} className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold text-sm shadow-lg hover:bg-slate-700 transition">Повний P&L звіт</button>
+                         </div>
                     </div>
                 </div>
             </div>
@@ -269,11 +273,31 @@
         </div>
     );
 
-    // --- OPS VIEW WITH PAGINATION (FIXED) ---
+    // --- SECURE DELETE MODAL ---
+    const DeleteConfirmModal = ({ id, close, confirm }) => {
+        const [input, setInput] = useState('');
+        return (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+                <div className="card-modern w-full max-w-sm p-6 bg-white text-center">
+                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500"><Icon name="alert-triangle" size={24}/></div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2">Підтвердіть видалення</h3>
+                    <p className="text-sm text-slate-500 mb-4">Цю дію неможливо відмінити. Введіть слово <b>видалити</b> нижче, щоб підтвердити.</p>
+                    <input type="text" value={input} onChange={e=>setInput(e.target.value)} className="w-full border border-slate-300 p-2 rounded-xl text-center mb-4 font-bold outline-none focus:border-red-500 uppercase" placeholder="ВИДАЛИТИ"/>
+                    <div className="flex gap-2">
+                        <button onClick={close} className="flex-1 py-2 text-slate-500 font-bold bg-slate-100 rounded-xl">Скасувати</button>
+                        <button disabled={input.toLowerCase() !== 'видалити'} onClick={()=>confirm(id)} className="flex-1 py-2 text-white font-bold bg-red-500 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed">Видалити</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // --- OPS VIEW (FIXED LAYOUT & DELETE) ---
     const OpsView = ({ transactions, deleteTx, syncMono, canDelete, categories }) => {
         const [isSyncing, setIsSyncing] = useState(false);
         const [filters, setFilters] = useState({ date: '', source: 'all', type: 'all' });
         const [page, setPage] = useState(1);
+        const [deleteId, setDeleteId] = useState(null); // For secure delete
         const ITEMS_PER_PAGE = 20;
 
         const handleSync = async () => { setIsSyncing(true); await syncMono(); setIsSyncing(false); };
@@ -289,21 +313,30 @@
         const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
         const paginatedData = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-        useEffect(() => { setPage(1); }, [filters]); // Reset page on filter change
+        useEffect(() => { setPage(1); }, [filters]); 
+
+        const confirmDelete = async (id) => {
+            await deleteTx(id);
+            setDeleteId(null);
+        }
 
         return (
             <div className="space-y-6 animate-fade-in pb-20 md:pb-0">
-                <div className="card-modern p-4 bg-slate-50/80 sticky top-0 z-20 backdrop-blur-md">
-                    <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                        <input type="date" className="bg-white border rounded-xl px-3 py-2 text-xs" value={filters.date} onChange={e=>setFilters({...filters, date:e.target.value})} />
+                {/* Fixed Layout for Mobile Button */}
+                <div className="card-modern p-4 bg-slate-50/80 sticky top-0 z-20 backdrop-blur-md flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                    <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar flex-1">
+                        <input type="date" className="bg-white border rounded-xl px-3 py-2 text-xs min-w-[120px]" value={filters.date} onChange={e=>setFilters({...filters, date:e.target.value})} />
                         <select className="bg-white border rounded-xl px-3 py-2 text-xs" value={filters.type} onChange={e=>setFilters({...filters, type:e.target.value})}><option value="all">Всі типи</option><option value="income">Дохід</option><option value="expense">Витрата</option></select>
-                        <button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap">{isSyncing ? "..." : "Синхро"}</button>
                     </div>
+                    <button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 text-white px-4 py-3 md:py-2 rounded-xl text-xs font-bold whitespace-nowrap flex items-center justify-center gap-2 shadow-lg md:shadow-none active:scale-95 transition">
+                        <Icon name="refresh-cw" size={14} className={isSyncing ? "animate-spin" : ""}/> {isSyncing ? "..." : "Синхронізація"}
+                    </button>
                 </div>
+
                 <div className="card-modern overflow-hidden">
                     <div className="divide-y divide-slate-100">
                         {paginatedData.map(t => (
-                            <div key={t.id} className="p-4 flex justify-between items-start active:bg-slate-50 transition">
+                            <div key={t.id} className="p-4 flex justify-between items-start active:bg-slate-50 transition group">
                                 <div className="flex gap-3">
                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg ${t.type==='income'?'bg-emerald-100 text-emerald-600':'bg-brand-50 text-brand-600'}`}>
                                         <Icon name={t.type==='income'?'arrow-down-left':'arrow-up-right'} size={20}/>
@@ -316,11 +349,11 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right flex flex-col items-end gap-1">
                                     <div className={`font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-800'}`}>
                                         {t.type==='income'?'+':'-'}{(Number(t.amount)||0).toLocaleString()}
                                     </div>
-                                    {canDelete && <button onClick={()=>deleteTx(t.id)} className="text-slate-300 p-1"><Icon name="trash-2" size={14}/></button>}
+                                    {canDelete && <button onClick={()=>setDeleteId(t.id)} className="text-slate-300 p-1 bg-slate-50 rounded md:opacity-0 group-hover:opacity-100 transition"><Icon name="trash-2" size={14}/></button>}
                                 </div>
                             </div>
                         ))}
@@ -333,6 +366,7 @@
                         </div>
                     )}
                 </div>
+                {deleteId && <DeleteConfirmModal id={deleteId} close={()=>setDeleteId(null)} confirm={confirmDelete} />}
             </div>
         );
     };
@@ -374,15 +408,7 @@
     const ManagerModal = ({ db, close, initialData }) => {
         const [form, setForm] = useState(initialData || { name: '', email: '', password: '', permissions: ['dashboard', 'ops'] });
         const isEdit = !!initialData;
-        
-        const togglePerm = (p) => {
-            setForm(prev => {
-                const currentPerms = prev.permissions || [];
-                const newPerms = currentPerms.includes(p) ? currentPerms.filter(x => x !== p) : [...currentPerms, p];
-                return { ...prev, permissions: newPerms };
-            });
-        };
-
+        const togglePerm = (p) => setForm(prev => { const currentPerms = prev.permissions || []; const newPerms = currentPerms.includes(p) ? currentPerms.filter(x => x !== p) : [...currentPerms, p]; return { ...prev, permissions: newPerms }; });
         const submit = async () => {
             if(!form.name || !form.email) return alert("Заповніть поля");
             try { if(isEdit) await updateDoc(doc(db, "managers", initialData.id), form); else await addDoc(collection(db, "managers"), form); close(); } catch(e) { alert(e.message); }
@@ -477,15 +503,32 @@
             const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s+(Number(t.amount)||0), 0);
             const net = revenue - totalExpense;
             const balances = { mono: 0, nova: 0, cash: 0 };
-            transactions.forEach(t => { const src = t.source || ''; const key = src.includes('Monobank') ? 'mono' : (src.includes('Nova') ? 'nova' : 'cash'); if(balances[key] !== undefined) balances[key] += (t.type==='income' ? (Number(t.amount)||0) : -(Number(t.amount)||0)); });
+            const expenseCats = {};
+            transactions.forEach(t => { 
+                const src = t.source || ''; 
+                const key = src.includes('Monobank') ? 'mono' : (src.includes('Nova') ? 'nova' : 'cash'); 
+                if(balances[key] !== undefined) balances[key] += (t.type==='income' ? (Number(t.amount)||0) : -(Number(t.amount)||0));
+                
+                if (t.type === 'expense' && !t.isDividend) {
+                     expenseCats[t.cat] = (expenseCats[t.cat] || 0) + Number(t.amount);
+                }
+            });
+
+            // Biggest Expense
+            const sortedExp = Object.entries(expenseCats).sort((a,b) => b[1] - a[1]);
+            const topExpense = sortedExp.length > 0 ? { name: sortedExp[0][0], val: sortedExp[0][1] } : { name: '-', val: 0 };
+
+            // Avg Ticket
+            const avgTicket = income.length > 0 ? (revenue / income.length).toFixed(0) : 0;
+
             const runway = totalExpense > 0 ? (totalCash / (totalExpense / 30)).toFixed(0) : "∞";
-            return { revenue, cogs, opex, net, totalCash, dividends, balances, margin: revenue ? ((net/revenue)*100).toFixed(0) : 0, totalExpense, runway, operationalCashFlow: revenue - totalExpense, financingCashFlow: -dividends, netCashChange: (revenue - totalExpense) - dividends };
+            return { revenue, cogs, opex, net, totalCash, dividends, balances, margin: revenue ? ((net/revenue)*100).toFixed(0) : 0, totalExpense, runway, operationalCashFlow: revenue - totalExpense, financingCashFlow: -dividends, netCashChange: (revenue - totalExpense) - dividends, topExpense, avgTicket };
         }, [transactions]);
 
         const handleLogin = async (e) => { e.preventDefault(); setLoading(true); try { await signInWithEmailAndPassword(auth, email, pass); } catch (authErr) { try { const q = query(collection(db, "managers"), where("email", "==", email), where("password", "==", pass)); const snapshot = await getDocs(q); if (!snapshot.empty) { const data = snapshot.docs[0].data(); const userObj = { uid: snapshot.docs[0].id, ...data, role: 'manager' }; localStorage.setItem('latiao_user', JSON.stringify(userObj)); setCurrentUser(userObj); setView(userObj.permissions?.[0] || 'dashboard'); loadData(); } else { alert("Невірний логін або пароль"); setLoading(false); } } catch (dbErr) { alert("Помилка: " + dbErr.message); setLoading(false); } } };
         const handleLogout = () => { signOut(auth); localStorage.removeItem('latiao_user'); setCurrentUser(null); setView('auth'); };
         const canAccess = (viewId) => { if (!currentUser) return false; if (currentUser.role === 'admin') return true; return currentUser.permissions?.includes(viewId); };
-        const deleteTx = async (id) => { if(confirm('Видалити операцію?')) await deleteDoc(doc(db, "transactions", id)); };
+        const deleteTx = async (id) => { await deleteDoc(doc(db, "transactions", id)); }; // Logic moved to modal
         const saveS = async (d) => { await setDoc(doc(db, "settings", "global"), d); setSettings(d); alert('Налаштування збережено'); };
         const saveC = async (d) => { await setDoc(doc(db, "settings", "categories"), d); setCategories(d); };
         const syncM = async () => { if (!settings.monoKey || !settings.monoAccountId) return alert("Спочатку налаштуйте API Monobank в налаштуваннях"); setStatusMsg("Синхронізація з банком..."); try { const now = Math.floor(Date.now()/1000); const res = await fetch(`https://corsproxy.io/?https://api.monobank.ua/personal/statement/${settings.monoAccountId}/${now - 2678400}/${now}`, { headers: { 'X-Token': settings.monoKey } }); const data = await res.json(); if (!Array.isArray(data)) throw new Error("Помилка API банку"); const batch = writeBatch(db); let count=0; const ids = new Set(transactions.map(t=>t.bankId)); data.forEach(item => { if(!ids.has(item.id)) { let cat = 'Інше'; const d = (item.description||'').toLowerCase(); if(d.includes('nova')) cat='Логістика'; else if(d.includes('atb')||d.includes('silpo')) cat='Закупівля (COGS)'; batch.set(doc(collection(db,"transactions")), { amount: Math.abs(item.amount/100), description: item.description, cat, source: 'Monobank ФОП', type: item.amount>0?'income':'expense', isDividend: false, date: new Date(item.time*1000).toLocaleDateString('uk-UA'), createdAt: item.time*1000, bankId: item.id }); count++; } }); if(count>0) await batch.commit(); setStatusMsg(`Успішно додано: ${count} операцій`); setTimeout(()=>setStatusMsg(''), 3000); } catch(e) { setStatusMsg("Помилка синхронізації"); alert(e.message); } };
