@@ -8,12 +8,25 @@
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f3f4f6; font-family: 'Inter', sans-serif; }
         .latiao-orange { color: #FF5722; }
         .bg-latiao { background-color: #FF5722; }
         .nav-item.active { background-color: #FEF2EE; color: #FF5722; border-right: 3px solid #FF5722; }
+        /* Анімація завантаження */
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 2px solid #ffffff;
+            width: 16px;
+            height: 16px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -21,6 +34,10 @@
 
     <script type="text/babel">
         const { useState, useEffect } = React;
+
+        // --- Константи (Логотипи) ---
+        const LOGO_MONO = "https://multicast.com.ua/wp-content/uploads/2024/04/monobank-logo.png";
+        const LOGO_NOVA = "https://novapay.credit/wp-content/uploads/2023/10/cropped-cropped-logo.png";
 
         // --- Mock Data ---
         const initialTransactions = [
@@ -31,45 +48,58 @@
             { id: 5, date: '2025-12-25', amount: 8000, type: 'income', category: 'Продажі', source: 'NovaPay', description: 'Накладений платіж реєстр', status: 'confirmed' },
         ];
 
-        const accounts = [
-            { name: 'Monobank ФОП', balance: 45200, type: 'bank' },
-            { name: 'NovaPay', balance: 12500, type: 'wallet' },
-            { name: 'Сейф (Готівка)', balance: 3000, type: 'cash' },
-        ];
-
         // --- Components ---
 
-        const Sidebar = ({ activeTab, setActiveTab }) => (
+        const Sidebar = ({ activeTab, setActiveTab, connections }) => (
             <div className="w-64 bg-white h-screen fixed left-0 top-0 shadow-lg flex flex-col z-10">
                 <div className="p-6 flex items-center gap-3">
-                    <div className="w-8 h-8 bg-latiao rounded-lg flex items-center justify-center text-white font-bold">L</div>
-                    <h1 className="text-xl font-bold text-gray-800">Latiao Фінанси</h1>
+                    <div className="w-8 h-8 bg-latiao rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-orange-200">L</div>
+                    <h1 className="text-xl font-bold text-gray-800 tracking-tight">Latiao <span className="font-light">Fin</span></h1>
                 </div>
                 <nav className="flex-1 mt-6">
                     {['Дашборд', 'Операції', 'P&L Звіт', 'Cash Flow', 'Дивіденди'].map((item) => (
                         <div 
                             key={item}
                             onClick={() => setActiveTab(item)}
-                            className={`p-4 cursor-pointer font-medium transition-colors ${activeTab === item ? 'nav-item active' : 'text-gray-500 hover:text-gray-800'}`}
+                            className={`p-4 cursor-pointer font-medium transition-colors border-r-2 border-transparent ${activeTab === item ? 'nav-item active' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'}`}
                         >
                             {item}
                         </div>
                     ))}
-                </nav>
-                <div className="p-6 border-t">
-                    <div className="text-xs text-gray-400 uppercase mb-2">Статус системи</div>
-                    <div className="flex items-center gap-2 text-sm text-green-600">
-                        <span className="w-2 h-2 rounded-full bg-green-500"></span> Mono: Connected
+                    <div className="my-2 border-t border-gray-100"></div>
+                    <div 
+                        onClick={() => setActiveTab('Налаштування')}
+                        className={`p-4 cursor-pointer font-medium transition-colors flex items-center gap-2 ${activeTab === 'Налаштування' ? 'nav-item active' : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'}`}
+                    >
+                        <span>⚙️</span> Налаштування
                     </div>
-                     <div className="flex items-center gap-2 text-sm text-green-600 mt-1">
-                        <span className="w-2 h-2 rounded-full bg-green-500"></span> NovaPay: Active
+                </nav>
+                
+                {/* Статус бар інтеграцій */}
+                <div className="p-6 border-t bg-gray-50">
+                    <div className="text-xs text-gray-400 uppercase mb-3 font-semibold tracking-wider">Статус з'єднання</div>
+                    
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <img src={LOGO_MONO} className="w-5 h-5 object-contain" alt="Mono" />
+                            <span className={`text-sm ${connections.mono ? 'text-gray-800' : 'text-gray-400'}`}>Monobank</span>
+                        </div>
+                        <div className={`w-2 h-2 rounded-full ${connections.mono ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]' : 'bg-gray-300'}`}></div>
+                    </div>
+
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <img src={LOGO_NOVA} className="w-5 h-5 object-contain" alt="Nova" />
+                            <span className={`text-sm ${connections.nova ? 'text-gray-800' : 'text-gray-400'}`}>NovaPay</span>
+                        </div>
+                        <div className={`w-2 h-2 rounded-full ${connections.nova ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.6)]' : 'bg-gray-300'}`}></div>
                     </div>
                 </div>
             </div>
         );
 
         const KPI = ({ title, value, subtext, alert }) => (
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                 <div className="text-gray-500 text-sm font-medium mb-1">{title}</div>
                 <div className={`text-2xl font-bold ${alert ? 'text-red-500' : 'text-gray-800'}`}>{value}</div>
                 {subtext && <div className="text-xs text-gray-400 mt-2">{subtext}</div>}
@@ -77,29 +107,148 @@
         );
 
         const TransactionRow = ({ t }) => (
-            <tr className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
-                <td className="p-4 text-sm text-gray-600">{t.date}</td>
+            <tr className="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group">
+                <td className="p-4 text-sm text-gray-500 font-mono">{t.date}</td>
                 <td className="p-4">
-                    <div className="flex items-center gap-2">
-                        <span className={`text-xs px-2 py-1 rounded ${t.source === 'monobank' ? 'bg-black text-white' : 'bg-red-500 text-white'}`}>
-                            {t.source === 'monobank' ? 'Mono' : 'NP'}
-                        </span>
-                        <span className="text-sm font-medium text-gray-800">{t.description}</span>
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center p-1 shadow-sm">
+                            <img 
+                                src={t.source === 'monobank' ? LOGO_MONO : LOGO_NOVA} 
+                                alt={t.source} 
+                                className="w-full h-full object-contain"
+                            />
+                        </div>
+                        <span className="text-sm font-medium text-gray-800 group-hover:text-black transition-colors">{t.description}</span>
                     </div>
                 </td>
                 <td className="p-4 text-sm">
                     {t.status === 'pending' ? (
-                        <button className="text-latiao text-xs border border-orange-200 bg-orange-50 px-2 py-1 rounded hover:bg-orange-100">
+                        <button className="text-latiao text-xs border border-orange-200 bg-orange-50 px-3 py-1.5 rounded-md hover:bg-orange-500 hover:text-white transition-all font-medium">
                             + Класифікувати
                         </button>
                     ) : (
-                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{t.category}</span>
+                        <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-md text-xs border border-gray-200">{t.category}</span>
                     )}
                 </td>
                 <td className={`p-4 text-sm font-bold text-right ${t.amount > 0 ? 'text-green-600' : 'text-gray-800'}`}>
-                    {t.amount > 0 ? '+' : ''}{t.amount} ₴
+                    {t.amount > 0 ? '+' : ''}{t.amount.toLocaleString()} ₴
                 </td>
             </tr>
+        );
+
+        const IntegrationCard = ({ title, logo, isConnected, onConnect }) => {
+            const [key, setKey] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+
+            const handleConnect = () => {
+                if (!key) return;
+                setIsLoading(true);
+                // Симуляція API запиту
+                setTimeout(() => {
+                    setIsLoading(false);
+                    onConnect(true);
+                    setKey(''); 
+                }, 1500);
+            };
+
+            return (
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-start mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center p-2">
+                                <img src={logo} alt={title} className="w-full h-full object-contain" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-800">{title}</h3>
+                                <p className="text-xs text-gray-500">{isConnected ? 'Автоматичний імпорт активний' : 'Не підключено'}</p>
+                            </div>
+                        </div>
+                        {isConnected ? (
+                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">ACTIVE</span>
+                        ) : (
+                            <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">DISCONNECTED</span>
+                        )}
+                    </div>
+
+                    {!isConnected ? (
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-600 uppercase mb-1">API Token / Key</label>
+                                <input 
+                                    type="password" 
+                                    value={key}
+                                    onChange={(e) => setKey(e.target.value)}
+                                    placeholder="Вставте ключ тут..."
+                                    className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all"
+                                />
+                                <p className="text-[10px] text-gray-400 mt-1">Ми не зберігаємо ключі у відкритому вигляді. Використовується TLS шифрування.</p>
+                            </div>
+                            <button 
+                                onClick={handleConnect}
+                                disabled={isLoading || !key}
+                                className={`w-full py-2.5 rounded-lg text-sm font-bold text-white transition-all flex justify-center items-center gap-2
+                                    ${isLoading || !key ? 'bg-gray-300 cursor-not-allowed' : 'bg-gray-900 hover:bg-latiao shadow-lg shadow-gray-200 hover:shadow-orange-200'}`}
+                            >
+                                {isLoading ? <div className="spinner"></div> : 'Підключити та синхронізувати'}
+                            </button>
+                        </div>
+                    ) : (
+                        <div>
+                            <div className="bg-green-50 border border-green-100 p-3 rounded-lg text-xs text-green-800 mb-4">
+                                ✓ З'єднання встановлено. Останнє оновлення: 2 хв тому.
+                            </div>
+                            <button 
+                                onClick={() => onConnect(false)}
+                                className="text-red-500 text-xs hover:text-red-700 underline"
+                            >
+                                Відключити інтеграцію
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const Settings = ({ connections, setConnections }) => (
+            <div className="max-w-4xl">
+                <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Налаштування та Інтеграції</h2>
+                    <p className="text-gray-500 text-sm">Керування підключеннями до банківських рахунків та платіжних систем.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <IntegrationCard 
+                        title="Monobank (ФОП/Картка)" 
+                        logo={LOGO_MONO} 
+                        isConnected={connections.mono}
+                        onConnect={(status) => setConnections(prev => ({...prev, mono: status}))}
+                    />
+                    <IntegrationCard 
+                        title="NovaPay (Кредит/Каса)" 
+                        logo={LOGO_NOVA} 
+                        isConnected={connections.nova}
+                        onConnect={(status) => setConnections(prev => ({...prev, nova: status}))}
+                    />
+                </div>
+
+                <div className="mt-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-800 mb-4">Загальні налаштування</h3>
+                    <div className="flex items-center justify-between py-3 border-b border-gray-50">
+                        <div>
+                            <div className="text-sm font-medium text-gray-800">Автоматична категоризація</div>
+                            <div className="text-xs text-gray-500">Призначати статті витрат на основі опису платежу</div>
+                        </div>
+                        <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#FF5722]" />
+                    </div>
+                    <div className="flex items-center justify-between py-3">
+                        <div>
+                            <div className="text-sm font-medium text-gray-800">Сповіщення про касовий розрив</div>
+                            <div className="text-xs text-gray-500">Попереджати, якщо залишок менше 3 днів витрат</div>
+                        </div>
+                        <input type="checkbox" defaultChecked className="w-5 h-5 accent-[#FF5722]" />
+                    </div>
+                </div>
+            </div>
         );
 
         const Dashboard = () => (
@@ -112,19 +261,36 @@
                 </div>
 
                 <div className="grid grid-cols-3 gap-6">
-                    <div className="col-span-2 bg-white p-6 rounded-xl shadow-sm">
+                    <div className="col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <h3 className="font-bold text-gray-800 mb-4">Структура витрат (Топ 5)</h3>
-                        <div className="space-y-3">
-                            {/* Dummy bars */}
-                            <div className="flex items-center gap-2 text-sm"><div className="w-24">Закупівля</div><div className="flex-1 bg-gray-100 h-2 rounded"><div className="bg-gray-800 h-2 rounded" style={{width: '60%'}}></div></div> 60%</div>
-                            <div className="flex items-center gap-2 text-sm"><div className="w-24">Реклама</div><div className="flex-1 bg-gray-100 h-2 rounded"><div className="bg-latiao h-2 rounded" style={{width: '25%'}}></div></div> 25%</div>
-                            <div className="flex items-center gap-2 text-sm"><div className="w-24">Доставка</div><div className="flex-1 bg-gray-100 h-2 rounded"><div className="bg-gray-400 h-2 rounded" style={{width: '10%'}}></div></div> 10%</div>
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3 text-sm">
+                                <div className="w-24 font-medium text-gray-600">Закупівля</div>
+                                <div className="flex-1 bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                                    <div className="bg-gray-800 h-full rounded-full" style={{width: '60%'}}></div>
+                                </div> 
+                                <span className="font-bold">60%</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                                <div className="w-24 font-medium text-gray-600">Реклама</div>
+                                <div className="flex-1 bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                                    <div className="bg-latiao h-full rounded-full" style={{width: '25%'}}></div>
+                                </div> 
+                                <span className="font-bold">25%</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm">
+                                <div className="w-24 font-medium text-gray-600">Доставка</div>
+                                <div className="flex-1 bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                                    <div className="bg-gray-400 h-full rounded-full" style={{width: '10%'}}></div>
+                                </div> 
+                                <span className="font-bold">10%</span>
+                            </div>
                         </div>
                     </div>
-                    <div className="bg-white p-6 rounded-xl shadow-sm">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                          <h3 className="font-bold text-gray-800 mb-4">Швидкі дії</h3>
-                         <button className="w-full bg-latiao text-white py-3 rounded-lg mb-3 hover:bg-orange-600 transition shadow-lg shadow-orange-200 font-medium">
-                            + Додати витрату (Кеш)
+                         <button className="w-full bg-latiao text-white py-3 rounded-lg mb-3 hover:bg-orange-600 transition shadow-lg shadow-orange-200 font-medium flex justify-center items-center gap-2">
+                            <span>+</span> Додати витрату (Кеш)
                          </button>
                          <button className="w-full border border-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition font-medium">
                             Виплатити дивіденди
@@ -135,21 +301,21 @@
         );
 
         const Operations = ({ transactions }) => (
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-                <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 border-b flex justify-between items-center bg-gray-50/50">
                     <h2 className="font-bold text-gray-700">Останні транзакції</h2>
                     <div className="flex gap-2">
-                        <button className="px-3 py-1 text-sm bg-white border rounded shadow-sm">Всі</button>
-                        <button className="px-3 py-1 text-sm bg-white border rounded shadow-sm text-red-500">Нерозподілені (1)</button>
+                        <button className="px-3 py-1 text-xs font-medium bg-white border border-gray-200 rounded-md hover:border-gray-300 text-gray-600">Всі</button>
+                        <button className="px-3 py-1 text-xs font-medium bg-red-50 border border-red-100 rounded-md text-red-600 hover:bg-red-100">Нерозподілені (1)</button>
                     </div>
                 </div>
                 <table className="w-full">
-                    <thead className="bg-gray-50 text-left">
+                    <thead className="bg-gray-50 text-left border-b border-gray-100">
                         <tr>
-                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Дата</th>
-                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Опис / Джерело</th>
-                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase">Стаття</th>
-                            <th className="p-4 text-xs font-semibold text-gray-500 text-right uppercase">Сума</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Дата</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Джерело / Опис</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Стаття</th>
+                            <th className="p-4 text-xs font-semibold text-gray-500 text-right uppercase tracking-wider">Сума</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -161,29 +327,41 @@
 
         const App = () => {
             const [activeTab, setActiveTab] = useState('Дашборд');
+            // Стан підключень (симуляція бази даних)
+            const [connections, setConnections] = useState({
+                mono: false,
+                nova: false
+            });
 
             return (
                 <div className="flex min-h-screen">
-                    <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+                    <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} connections={connections} />
                     <main className="flex-1 ml-64 p-8">
                         <header className="flex justify-between items-center mb-8">
-                            <h2 className="text-2xl font-bold text-gray-800">{activeTab}</h2>
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-800">{activeTab}</h2>
+                                {activeTab === 'Налаштування' && <span className="text-xs text-orange-500 font-medium">Admin Area</span>}
+                            </div>
                             <div className="flex items-center gap-4">
-                                <div className="text-right">
+                                <div className="text-right hidden md:block">
                                     <div className="text-sm font-bold text-gray-800">Руслан</div>
                                     <div className="text-xs text-gray-500">Власник • Latiao Snack</div>
                                 </div>
-                                <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                                <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white text-sm font-bold border-2 border-white shadow-sm">
+                                    R
+                                </div>
                             </div>
                         </header>
                         
                         {activeTab === 'Дашборд' && <Dashboard />}
                         {activeTab === 'Операції' && <Operations transactions={initialTransactions} />}
+                        {activeTab === 'Налаштування' && <Settings connections={connections} setConnections={setConnections} />}
                         
-                        {/* Placeholder for other tabs */}
-                        {(activeTab !== 'Дашборд' && activeTab !== 'Операції') && (
-                            <div className="text-center text-gray-400 mt-20">
-                                <p>Розділ "{activeTab}" у розробці...</p>
+                        {(activeTab !== 'Дашборд' && activeTab !== 'Операції' && activeTab !== 'Налаштування') && (
+                            <div className="flex flex-col items-center justify-center h-96 text-gray-400 bg-white rounded-xl border border-dashed border-gray-200">
+                                <div className="text-4xl mb-4">🚧</div>
+                                <p className="text-lg font-medium text-gray-500">Розділ "{activeTab}" у розробці...</p>
+                                <p className="text-sm">Тут будуть складні звіти та аналітика.</p>
                             </div>
                         )}
                     </main>
