@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Latiao Finance | Ultimate v15.1</title>
+    <title>Latiao Finance | Fast v16.0</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#1e293b">
-    <meta name="application-name" content="Latiao Fin">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845662.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2845/2845662.png">
     
@@ -31,7 +30,7 @@
                         slate: { 850: '#172033', 900: '#0f172a' }
                     },
                     boxShadow: {
-                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03)',
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
                         'glow': '0 0 15px rgba(255, 87, 34, 0.3)'
                     },
                     screens: { 'xs': '375px' }
@@ -44,24 +43,18 @@
         main { background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 24px 24px; }
         .dark main { background-image: radial-gradient(#334155 1px, transparent 1px); }
         
-        /* Smooth Transitions */
-        .page-transition { animation: slideIn 0.3s ease-out; }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .page-transition { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         .card-modern { 
-            background: white; border-radius: 24px; border: 1px solid #e2e8f0; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: transform 0.2s;
+            background: white; border-radius: 20px; border: 1px solid #e2e8f0; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: all 0.2s;
         }
         .dark .card-modern {
             background: #1e293b; border-color: #334155; color: #f1f5f9;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
         
-        .sidebar-link { transition: all 0.2s ease-in-out; }
-        .sidebar-link.active { background: linear-gradient(135deg, #FF5722 0%, #ea580c 100%); color: white; border-radius: 16px; box-shadow: 0 4px 12px rgba(255, 87, 34, 0.3); }
-        .sidebar-link:hover:not(.active) { background: #fff1ec; color: #ea580c; border-radius: 16px; }
-        .dark .sidebar-link:hover:not(.active) { background: #334155; color: #fb923c; }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
@@ -81,7 +74,7 @@
 
 <div id="root"></div>
 
-<button id="sos-btn" onclick="if(confirm('Ви впевнені? Це очистить кеш браузера (не базу даних) і перезавантажить сторінку.')){localStorage.clear();window.location.reload();}">🆘 ПОВНЕ ОЧИЩЕННЯ (FIX)</button>
+<button id="sos-btn" onclick="if(confirm('Очистити кеш і перезавантажити?')){localStorage.clear();window.location.reload();}">🆘 ПОВНЕ ОЧИЩЕННЯ (FIX)</button>
 
 <script type="text/babel" data-type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -104,7 +97,7 @@
 
     const { useState, useEffect, useMemo, Component } = React;
 
-    // --- ERROR BOUNDARY (Prevent White Screen) ---
+    // --- ERROR BOUNDARY ---
     class ErrorBoundary extends Component {
         constructor(props) { super(props); this.state = { hasError: false }; }
         static getDerivedStateFromError(error) { return { hasError: true }; }
@@ -114,9 +107,9 @@
                 return (
                     <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
                         <div className="text-6xl mb-4">🤕</div>
-                        <h1 className="text-2xl font-bold mb-2">Ой, щось пішло не так</h1>
-                        <p className="mb-8 opacity-60 text-sm">Можливо, конфлікт старих даних. Спробуйте скинути кеш.</p>
-                        <button onClick={()=>{localStorage.clear();window.location.reload()}} className="bg-brand-500 hover:bg-brand-600 px-8 py-4 rounded-2xl font-bold transition shadow-glow">Скинути та оновити</button>
+                        <h1 className="text-2xl font-bold mb-2">Збій інтерфейсу</h1>
+                        <p className="mb-8 opacity-60 text-sm">Спробуйте скинути налаштування.</p>
+                        <button onClick={()=>{localStorage.clear();window.location.reload()}} className="bg-brand-500 px-8 py-4 rounded-2xl font-bold shadow-glow">Скинути та оновити</button>
                     </div>
                 );
             }
@@ -134,7 +127,7 @@
         expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Знижки', 'Інше']
     };
 
-    const DEFAULT_BANKS = ['Monobank ФОП', 'NovaPay', 'Готівка'];
+    const DEFAULT_BANKS = ['Monobank ФОП', 'Готівка'];
 
     const ALL_VIEWS = [
         {id:'dashboard', label:'Огляд', icon:'layout-grid', mobile: true},
@@ -157,7 +150,7 @@
 
     const DashboardView = ({ metrics, transactions, setView, banks }) => {
         const isHealthy = metrics.margin > 20;
-        const healthStatus = isHealthy ? "Чудовий" : (metrics.margin > 0 ? "Нормальний" : "Критичний");
+        const healthStatus = isHealthy ? "Чудовий" : (metrics.margin > 0 ? "Норма" : "Критичний");
         const healthColor = isHealthy ? "text-emerald-500" : (metrics.margin > 0 ? "text-orange-500" : "text-red-500");
         const topExp = metrics.topExpense || { name: '-', val: 0 };
         const safeBanks = (banks && banks.length > 0) ? banks : DEFAULT_BANKS;
@@ -278,7 +271,7 @@
         </div>
     );
 
-    const OpsView = ({ transactions, deleteTx, syncMono, canDelete, categories, syncNova }) => {
+    const OpsView = ({ transactions, deleteTx, syncMono, canDelete, categories }) => {
         const [isSyncing, setIsSyncing] = useState(false);
         const [filters, setFilters] = useState({ date: '', source: 'all', type: 'all' });
         const [page, setPage] = useState(1);
@@ -286,11 +279,10 @@
         const ITEMS_PER_PAGE = 20;
 
         const handleSync = async () => { setIsSyncing(true); await syncMono(); setIsSyncing(false); };
-        const handleSyncNova = async () => { setIsSyncing(true); await syncNova(); setIsSyncing(false); };
         
         const filtered = transactions.filter(t => {
             if (filters.date && t.date) { const [y, m, d] = filters.date.split('-'); if (t.date !== `${d}.${m}.${y}`) return false; }
-            if (filters.source !== 'all') { const src = t.source || ''; if (filters.source === 'mono' && !src.includes('Monobank')) return false; if (filters.source === 'nova' && !src.includes('Nova')) return false; if (filters.source === 'cash' && !src.includes('Готівка')) return false; }
+            if (filters.source !== 'all') { const src = t.source || ''; if (filters.source === 'mono' && !src.includes('Monobank')) return false; }
             if (filters.type !== 'all' && t.type !== filters.type) return false;
             return true;
         });
@@ -311,7 +303,6 @@
                     </div>
                     <div className="flex gap-2 w-full md:w-auto">
                         <button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 dark:bg-slate-700 text-white px-3 py-3 md:py-2 rounded-lg text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 shadow-md flex-1 md:flex-none hover:bg-slate-800 transition active:scale-95"><Icon name="refresh-cw" size={14} className={isSyncing?"animate-spin":""}/> Mono</button>
-                        <button onClick={handleSyncNova} disabled={isSyncing} className="bg-red-600 dark:bg-red-700 text-white px-3 py-3 md:py-2 rounded-lg text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 shadow-md flex-1 md:flex-none hover:bg-red-500 transition active:scale-95"><Icon name="refresh-cw" size={14} className={isSyncing?"animate-spin":""}/> NovaPay</button>
                     </div>
                 </div>
 
@@ -344,6 +335,7 @@
         );
     };
 
+    // --- MANAGERS & LOGS ---
     const ManagersView = ({ db, logAction }) => {
         const [managers, setManagers] = useState([]);
         const [logs, setLogs] = useState([]);
@@ -452,7 +444,6 @@
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><Icon name="link"/> Інтеграції (Банки)</h2>
                     <div className="space-y-6">
                         <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700"><h3 className="font-bold text-sm mb-3 flex items-center gap-2"><div className="w-5 h-5 bg-black rounded flex items-center justify-center text-white text-[10px]">M</div> Monobank / Еквайринг</h3><div className="space-y-2"><input value={settings.monoKey} onChange={e=>setSettings({...settings, monoKey:e.target.value})} placeholder="X-Token" className="w-full border p-3 rounded-xl text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"/><div className="flex gap-2"><input value={settings.monoAccountId} onChange={e=>setSettings({...settings, monoAccountId:e.target.value})} placeholder="ID Рахунку" className="w-full border p-3 rounded-xl text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"/><button onClick={syncMono} className="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm whitespace-nowrap">Рахунки</button></div></div></div>
-                         <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30"><h3 className="font-bold text-sm mb-3 text-red-700 dark:text-red-400 flex items-center gap-2"><div className="w-5 h-5 bg-red-600 rounded flex items-center justify-center text-white text-[10px]">N</div> NovaPay (Контроль оплат)</h3><div className="space-y-2"><textarea value={settings.novaKey} onChange={e=>setSettings({...settings, novaKey:e.target.value})} placeholder="Публічний ключ (Public Key)" className="w-full border p-3 rounded-xl text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white h-24 font-mono text-[10px]"/><button onClick={syncNova} className="bg-red-600 text-white w-full py-2 rounded-xl text-sm font-bold shadow-sm">Синхронізувати NovaPay</button></div></div>
                     </div>
                     <button onClick={()=>saveSettings(settings)} className="bg-brand-500 text-white w-full py-3 rounded-xl font-bold mt-4 shadow-lg">Зберегти налаштування</button>
                 </div>
@@ -463,7 +454,7 @@
 
     const TransactionModal = ({ type, close, categories, logAction, banks }) => {
         // Fallback for banks
-        const safeBanks = (banks && banks.length > 0) ? banks : DEFAULT_BANKS;
+        const safeBanks = Array.isArray(banks) && banks.length > 0 ? banks : DEFAULT_BANKS;
         const [form, setForm] = useState({ amount: '', desc: '', cat: 'Інше', source: safeBanks[0] });
 
         const submit = async () => { if(!form.amount) return; const isDiv = type === 'dividend'; let cat = form.cat; if(!isDiv && form.cat === 'Інше') { const desc = (form.desc||'').toLowerCase(); if(desc.includes('nova')) cat = 'Логістика'; if(desc.includes('meta')) cat = 'Реклама'; } else if(isDiv) cat = 'Дивіденди'; await addDoc(collection(db, "transactions"), { amount: Number(form.amount), description: form.desc || (isDiv?'Виплата дивідендів':''), cat, source: form.source, type: (type==='dividend' || type==='expense') ? 'expense' : 'income', isDividend: isDiv, date: new Date().toLocaleDateString('uk-UA'), createdAt: Date.now() }); 
@@ -484,7 +475,7 @@
         const [transactions, setTransactions] = useState([]);
         const [loading, setLoading] = useState(true);
         const [statusMsg, setStatusMsg] = useState('');
-        const [settings, setSettings] = useState({ monoKey: '', novaKey: '', monoAccountId: '' });
+        const [settings, setSettings] = useState({ monoKey: '', monoAccountId: '', novaKey: '' });
         const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
         const [banks, setBanks] = useState(DEFAULT_BANKS);
         const [email, setEmail] = useState('');
@@ -506,7 +497,7 @@
                 const sSnap = await getDoc(doc(db, "settings", "global")); if (sSnap.exists()) setSettings(sSnap.data()); 
                 const cSnap = await getDoc(doc(db, "settings", "categories")); if (cSnap.exists()) setCategories(cSnap.data()); else await setDoc(doc(db, "settings", "categories"), DEFAULT_CATEGORIES); 
                 
-                // SAFE BANK LOADING FIX
+                // SAFE BANK LOADING
                 const bSnap = await getDoc(doc(db, "settings", "banks")); 
                 if (bSnap.exists() && Array.isArray(bSnap.data().list)) {
                     setBanks(bSnap.data().list); 
@@ -525,10 +516,10 @@
         const metrics = useMemo(() => {
             const income = transactions.filter(t => t.type === 'income' && !t.isDividend); const expense = transactions.filter(t => t.type === 'expense' && !t.isDividend); const revenue = income.reduce((s,t) => s + (Number(t.amount)||0), 0); const cogs = expense.filter(t => t.cat === 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0); const opex = expense.filter(t => t.cat !== 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0); const totalExpense = cogs + opex; const totalCash = transactions.reduce((s,t) => t.type==='income' ? s+(Number(t.amount)||0) : s-(Number(t.amount)||0), 0); const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s+(Number(t.amount)||0), 0); const net = revenue - totalExpense; 
             
-            // Dynamic Balances based on Bank List
+            // Safe Balance Calculation
             const balances = {};
-            const safeBanksList = (banks && banks.length > 0) ? banks : DEFAULT_BANKS;
-            safeBanksList.forEach(b => balances[b] = 0); 
+            const safeBanksList = Array.isArray(banks) ? banks : DEFAULT_BANKS;
+            safeBanksList.forEach(b => balances[b] = 0);
             transactions.forEach(t => { 
                 const src = t.source || 'Готівка'; 
                 if(balances[src] !== undefined) balances[src] += (t.type==='income' ? (Number(t.amount)||0) : -(Number(t.amount)||0));
@@ -545,17 +536,11 @@
         const saveS = async (d) => { await setDoc(doc(db, "settings", "global"), d); setSettings(d); alert('Налаштування збережено'); logAction("Оновлення налаштувань", "Global"); };
         const saveC = async (d) => { await setDoc(doc(db, "settings", "categories"), d); setCategories(d); };
         
-        const syncMono = async () => { if (!settings.monoKey || !settings.monoAccountId) return alert("Спочатку налаштуйте API Monobank"); setStatusMsg("Синхронізація з банком..."); try { const now = Math.floor(Date.now()/1000); const res = await fetch(`https://corsproxy.io/?https://api.monobank.ua/personal/statement/${settings.monoAccountId}/${now - 2678400}/${now}`, { headers: { 'X-Token': settings.monoKey } }); const data = await res.json(); if (!Array.isArray(data)) throw new Error("Помилка API банку"); const batch = writeBatch(db); let count=0; const ids = new Set(transactions.map(t=>t.bankId)); data.forEach(item => { if(!ids.has(item.id)) { let cat = 'Інше'; const d = (item.description||'').toLowerCase(); if(d.includes('nova')) cat='Логістика'; else if(d.includes('atb')||d.includes('silpo')) cat='Закупівля (COGS)'; batch.set(doc(collection(db,"transactions")), { amount: Math.abs(item.amount/100), description: item.description, cat, source: 'Monobank ФОП', type: item.amount>0?'income':'expense', isDividend: false, date: new Date(item.time*1000).toLocaleDateString('uk-UA'), createdAt: item.time*1000, bankId: item.id }); count++; } }); if(count>0) await batch.commit(); logAction("Синхронізація Monobank", `Додано: ${count}`); setStatusMsg(`Успішно додано: ${count} операцій`); setTimeout(()=>setStatusMsg(''), 3000); } catch(e) { setStatusMsg("Помилка синхронізації"); alert(e.message); } };
+        const syncMono = async () => { if (!settings.monoKey || !settings.monoAccountId) return alert("Спочатку налаштуйте API Monobank в налаштуваннях"); setStatusMsg("Синхронізація з банком..."); try { const now = Math.floor(Date.now()/1000); const res = await fetch(`https://corsproxy.io/?https://api.monobank.ua/personal/statement/${settings.monoAccountId}/${now - 2678400}/${now}`, { headers: { 'X-Token': settings.monoKey } }); const data = await res.json(); if (!Array.isArray(data)) throw new Error("Помилка API банку"); const batch = writeBatch(db); let count=0; const ids = new Set(transactions.map(t=>t.bankId)); data.forEach(item => { if(!ids.has(item.id)) { let cat = 'Інше'; const d = (item.description||'').toLowerCase(); if(d.includes('nova')) cat='Логістика'; else if(d.includes('atb')||d.includes('silpo')) cat='Закупівля (COGS)'; batch.set(doc(collection(db,"transactions")), { amount: Math.abs(item.amount/100), description: item.description, cat, source: 'Monobank ФОП', type: item.amount>0?'income':'expense', isDividend: false, date: new Date(item.time*1000).toLocaleDateString('uk-UA'), createdAt: item.time*1000, bankId: item.id }); count++; } }); if(count>0) await batch.commit(); logAction("Синхронізація Monobank", `Додано: ${count}`); setStatusMsg(`Успішно додано: ${count} операцій`); setTimeout(()=>setStatusMsg(''), 3000); } catch(e) { setStatusMsg("Помилка синхронізації"); alert(e.message); } };
         
         const syncNova = async () => { 
-             if (!settings.novaKey) return alert("Введіть ключ NovaPay в налаштуваннях");
-             setStatusMsg("Синхронізація NovaPay...");
-             setTimeout(async () => {
-                 const fakeId = "nova_" + Date.now();
-                 await addDoc(collection(db, "transactions"), { amount: 500, description: "Тест оплати NovaPay", cat: "Продажі", source: "NovaPay", type: "income", isDividend: false, date: new Date().toLocaleDateString('uk-UA'), createdAt: Date.now(), bankId: fakeId });
-                 setStatusMsg("Тестова оплата додана (Demo)");
-                 setTimeout(()=>setStatusMsg(''), 3000);
-             }, 1500);
+             // Demo sync removed for stability
+             alert("NovaPay: Функція вимкнена в Lite версії");
         };
 
         const delAll = async () => { if(confirm("ВИДАЛИТИ ВСЮ БАЗУ ДАНИХ? Це неможливо відмінити.")) { const s = await getDocs(query(collection(db,"transactions"), limit(500))); const b = writeBatch(db); s.docs.forEach(d=>b.delete(d.ref)); await b.commit(); logAction("Повне очищення бази", "Всі операції"); alert("Базу очищено."); } };
