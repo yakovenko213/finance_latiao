@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Latiao Finance | Full v16.7</title>
+    <title>Latiao Finance | Monolith v17.0</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -129,7 +129,7 @@
 
 <div id="root"></div>
 
-<button id="sos-btn" onclick="if(confirm('Скинути кеш та налаштування?')){localStorage.clear();window.location.reload();}">🆘 ПОВНЕ ОЧИЩЕННЯ (FIX)</button>
+<button id="sos-btn" onclick="if(confirm('Скинути кеш та налаштування?')){localStorage.clear();window.location.reload();}">🆘 ПОВНЕ ОЧИЩЕННЯ</button>
 
 <script type="text/babel" data-type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -181,7 +181,6 @@
 
     const { useState, useEffect, useMemo, Component } = React;
 
-    // --- ERROR BOUNDARY ---
     class ErrorBoundary extends Component {
         constructor(props) { super(props); this.state = { hasError: false }; }
         static getDerivedStateFromError(error) { return { hasError: true }; }
@@ -237,7 +236,6 @@
         return <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">{particles.map(p=><div key={p.id} className={`particle ${className}`} style={{left:`${p.left}%`,animationDuration:`${p.anim}s`,animationDelay:`${p.delay}s`,fontSize:`${p.size}px`}}>{symbol}</div>)}</div>;
     };
 
-    // --- THEME DECORATIONS ---
     const ThemeDecorations = ({ effect }) => {
         if (effect === 'winter') return (
             <>
@@ -333,6 +331,7 @@
                 await addDoc(collection(db, "transactions"), { description: form.desc, amount: Number(form.amount), cat: "Закупівля (COGS)", source: form.bank, type: "expense", isDividend: false, date: new Date(form.date).toLocaleDateString('uk-UA'), createdAt: Date.now() });
                 logAction("Створено закупівлю", `${form.amount} ₴ - ${form.desc}`);
                 setForm({ desc: '', amount: '', bank: safeBanks[0], date: new Date().toISOString().split('T')[0] });
+                alert("Закупівлю додано!");
             } catch (e) { alert("Помилка: " + e.message); }
         };
 
@@ -607,7 +606,6 @@
         const [newCatIn, setNewCatIn] = useState(''); const [newCatOut, setNewCatOut] = useState(''); const [newBank, setNewBank] = useState('');
         const addCat = (t, v, setter) => { if(!v) return; const newCats = {...categories, [t]: [...(categories?.[t]||[]), v]}; saveCategories(newCats); logAction("Додавання категорії", v); setter(''); };
         const removeCat = (t, v) => { if(confirm('Видалити?')) { const newCats = {...categories, [t]: categories[t].filter(c=>c!==v)}; saveCategories(newCats); logAction("Видалення категорії", v); } };
-        
         const addBank = () => { if(!newBank) return; const newB = [...banks, newBank]; saveBanks(newB); setNewBank(''); logAction("Додавання банку", newBank); };
         const removeBank = (b) => { if(confirm('Видалити банк?')) { const newB = banks.filter(x=>x!==b); saveBanks(newB); logAction("Видалення банку", b); } };
 
