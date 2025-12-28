@@ -3,105 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Latiao System Doctor</title>
+    <title>Deep Cleaner</title>
     <style>
-        body { background-color: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; font-size: 14px; line-height: 1.5; }
-        .log { margin-bottom: 5px; border-bottom: 1px solid #333; padding-bottom: 2px; }
-        .error { color: #ff3333; font-weight: bold; }
-        .success { color: #00ff00; }
-        .info { color: #ffff00; }
-        button { background: #333; color: white; border: 1px solid #fff; padding: 15px; width: 100%; margin-top: 20px; font-size: 18px; border-radius: 8px; }
-        h1 { border-bottom: 2px solid white; padding-bottom: 10px; }
+        body { background: #990000; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px; }
+        button { background: white; color: #990000; font-weight: bold; padding: 20px 40px; font-size: 24px; border: none; border-radius: 15px; margin-top: 20px; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
+    <h1>🛑 ЗУПИНКА СИСТЕМИ</h1>
+    <p>Виявлено стару версію в кеші.</p>
+    <div id="status">Очікування...</div>
 
-    <h1>🏥 Latiao System Doctor</h1>
-    <div id="console"></div>
-    <button onclick="fullWipe()">☢️ ПРИМУСОВЕ ОЧИЩЕННЯ (WIPE)</button>
-
-    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <button onclick="nukeEverything()">💥 ОЧИСТИТИ ВСЕ</button>
 
     <script>
-        const consoleDiv = document.getElementById('console');
+        async function nukeEverything() {
+            const status = document.getElementById('status');
+            status.innerHTML = "Починаю очищення...";
 
-        function log(msg, type = 'normal') {
-            const div = document.createElement('div');
-            div.className = 'log ' + type;
-            div.innerText = `> ${msg}`;
-            consoleDiv.appendChild(div);
-        }
-
-        function error(msg) { log(msg, 'error'); }
-        function success(msg) { log(msg, 'success'); }
-
-        // 1. Перехоплення глобальних помилок
-        window.onerror = function(message, source, lineno, colno, errorObj) {
-            error(`CRITICAL ERROR: ${message} (Line: ${lineno})`);
-            return true;
-        };
-
-        // 2. Тест бібліотек
-        log("1. Перевірка бібліотек...");
-        if (window.React) success("React завантажено."); else error("React НЕ ЗНАЙДЕНО!");
-        if (window.ReactDOM) success("ReactDOM завантажено."); else error("ReactDOM НЕ ЗНАЙДЕНО!");
-        if (window.Babel) success("Babel завантажено."); else error("Babel НЕ ЗНАЙДЕНО!");
-
-        // 3. Тест сховища
-        log("2. Перевірка сховища...");
-        try {
-            const testKey = 'latiao_test';
-            localStorage.setItem(testKey, 'ok');
-            if (localStorage.getItem(testKey) === 'ok') {
-                localStorage.removeItem(testKey);
-                success("LocalStorage працює справно.");
-            } else {
-                error("LocalStorage не відповідає.");
-            }
-        } catch (e) {
-            error("Доступ до LocalStorage заблоковано: " + e.message);
-        }
-
-        // 4. Функція повного стирання
-        window.fullWipe = async function() {
-            log("--- ПОЧАТОК ПРИМУСОВОГО ОЧИЩЕННЯ ---", 'info');
-            
             try {
-                // Очищення LocalStorage
-                localStorage.clear();
-                success("LocalStorage очищено.");
-
-                // Очищення SessionStorage
-                sessionStorage.clear();
-                success("SessionStorage очищено.");
-
-                // Очищення Service Workers (кеш PWA)
+                // 1. Вбити Service Workers (головна причина)
                 if ('serviceWorker' in navigator) {
                     const registrations = await navigator.serviceWorker.getRegistrations();
                     for(let registration of registrations) {
                         await registration.unregister();
-                        success("ServiceWorker зупинено.");
+                        status.innerHTML += "<br>Service Worker видалено.";
                     }
                 }
 
-                // Очищення IndexedDB (найчастіша причина зависання Firebase)
-                const dbs = await window.indexedDB.databases();
-                dbs.forEach(db => {
-                    window.indexedDB.deleteDatabase(db.name);
-                    success(`База даних '${db.name}' видалена.`);
-                });
+                // 2. Видалити Cache Storage (тут лежить старий HTML)
+                if ('caches' in window) {
+                    const keys = await caches.keys();
+                    for (let key of keys) {
+                        await caches.delete(key);
+                        status.innerHTML += "<br>Кеш видалено.";
+                    }
+                }
 
-                log("--- ГОТОВО! СИСТЕМА ЧИСТА ---", 'success');
-                alert("Систему повністю очищено. Тепер ви можете завантажити основний код v17.0.");
+                // 3. Очистити локальні дані
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // 4. Очистити бази даних
+                if ('indexedDB' in window) {
+                    const dbs = await window.indexedDB.databases();
+                    for (let db of dbs) {
+                        window.indexedDB.deleteDatabase(db.name);
+                    }
+                }
+
+                status.innerHTML = "<h1>✅ ГОТОВО!</h1><br>Тепер вставте код v17.0";
+                alert("Систему повністю очищено! Тепер ви можете вставити новий код.");
+
             } catch (e) {
-                error("Помилка при очищенні: " + e.message);
-                alert("Сталася помилка. Спробуйте перезавантажити сторінку і натиснути ще раз.");
+                alert("Помилка: " + e);
             }
-        };
-
-        log("Очікування команди...", 'info');
+        }
     </script>
 </body>
 </html>
