@@ -1,562 +1,1337 @@
 <!DOCTYPE html>
+
 <html lang="uk">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Latiao Finance | v16.3 Stable</title>
+
+    <title>Latiao Finance | v16.0 Atmosphere</title>
+
     
+
     <meta name="apple-mobile-web-app-capable" content="yes">
+
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <meta name="theme-color" content="#1e293b">
+
     <meta name="application-name" content="Latiao Fin">
+
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2845/2845662.png">
+
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2845/2845662.png">
+
     
+
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <script src="https://cdn.tailwindcss.com"></script>
+
     <script src="https://unpkg.com/lucide@latest"></script>
+
     
+
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
     
+
     <script>
+
         tailwind.config = {
+
             darkMode: 'class',
+
             theme: {
+
                 extend: {
+
                     fontFamily: { sans: ['Manrope', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+
                     colors: { 
+
                         // Dynamic Theme Colors mapped to CSS Variables
+
                         brand: { 
+
                             50: 'var(--brand-50)', 
+
                             100: 'var(--brand-100)', 
+
                             500: 'var(--brand-500)', 
+
                             600: 'var(--brand-600)', 
+
                             700: 'var(--brand-700)' 
+
                         },
+
                         slate: { 
+
                             50: 'var(--bg-50)',   // Main Background
+
                             100: 'var(--bg-100)', // Secondary Background
+
                             200: 'var(--bg-200)', // Borders
+
                             700: 'var(--text-sec)', // Secondary Text
+
                             800: 'var(--card-bg)', // Card Dark/Light
+
                             850: '#172033', 
+
                             900: 'var(--text-main)' // Main Text
+
                         }
+
                     },
+
                     boxShadow: {
+
                         'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03)',
+
                         'glow': '0 0 15px var(--brand-500)'
+
                     },
+
                     screens: { 'xs': '375px' }
+
                 }
+
             }
+
         }
+
     </script>
+
     <style>
+
         :root {
+
             /* Default Theme (Standard) */
+
             --brand-50: #fff1ec; --brand-100: #ffe4d9; --brand-500: #FF5722; --brand-600: #ea580c; --brand-700: #c2410c;
+
             --bg-50: #F8FAFC; --bg-100: #F1F5F9; --bg-200: #E2E8F0;
+
             --card-bg: #1e293b; --text-main: #0f172a; --text-sec: #334155;
+
         }
+
+
 
         body { -webkit-tap-highlight-color: transparent; transition: background-color 0.5s, color 0.5s; overflow-x: hidden; background-color: var(--bg-50); color: var(--text-main); }
+
         
+
         /* Background Pattern */
+
         main { background-image: radial-gradient(var(--bg-200) 1px, transparent 1px); background-size: 24px 24px; }
+
         
+
         .card-modern { 
+
             background: white; border-radius: 20px; border: 1px solid var(--bg-200); 
+
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: all 0.3s;
+
         }
+
         
+
         .sidebar-link { transition: all 0.2s ease-in-out; }
+
         .sidebar-link.active { background: linear-gradient(135deg, var(--brand-500) 0%, var(--brand-600) 100%); color: white; border-radius: 12px; box-shadow: 0 4px 10px var(--brand-100); }
+
         .sidebar-link:hover:not(.active) { background: var(--brand-50); color: var(--brand-600); border-radius: 12px; }
 
+
+
         .info-box { border-left: 4px solid; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+
         
+
         .fade-in { animation: fadeIn 0.4s ease-out; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
+
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 
+
+
         /* SEASONAL PARTICLES */
+
         .particle { position: fixed; top: -10vh; z-index: 9999; pointer-events: none; animation: fall linear infinite; }
+
         @keyframes fall { 0% { transform: translateY(-10vh) translateX(0) rotate(0deg); opacity: 1; } 100% { transform: translateY(110vh) translateX(20px) rotate(360deg); opacity: 0; } }
+
         .snow { color: #bae6fd; text-shadow: 0 0 5px rgba(255,255,255,0.8); }
+
         .leaf { filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.1)); }
+
         .flower { color: #f472b6; text-shadow: 0 0 5px rgba(244, 114, 182, 0.5); }
+
         .sun { color: #facc15; text-shadow: 0 0 10px rgba(250, 204, 21, 0.8); }
 
+
+
         /* DECORATIONS */
+
         .deco-hanging { position: fixed; top: 0; z-index: 50; animation: swing 3s infinite ease-in-out alternate; transform-origin: top center; pointer-events: none; }
+
         @keyframes swing { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
+
         
+
         .deco-ground { position: fixed; bottom: 0; z-index: 50; pointer-events: none; opacity: 0.8; }
 
+
+
         #sos-btn { position: fixed; bottom: 20px; left: 20px; z-index: 99999; background: #ef4444; color: white; padding: 12px 20px; border-radius: 12px; font-size: 12px; font-weight: 800; border: 2px solid white; box-shadow: 0 10px 25px rgba(0,0,0,0.5); cursor: pointer; opacity: 0.9; transition: all 0.2s; }
+
         #sos-btn:active { transform: scale(0.9); }
+
     </style>
+
 </head>
+
 <body>
+
+
 
 <div id="root"></div>
 
+
+
 <button id="sos-btn" onclick="if(confirm('Скинути кеш та налаштування?')){localStorage.clear();window.location.reload();}">🆘 ПОВНЕ ОЧИЩЕННЯ (FIX)</button>
 
+
+
 <script type="text/babel" data-type="module">
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
     import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, setDoc, getDoc, writeBatch, getDocs, limit, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
     import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+
+
     const firebaseConfig = {
+
       apiKey: "AIzaSyDIk302oYXye-r4hRE-EB16N6K3T31g1uk",
+
       authDomain: "latiao-finance.firebaseapp.com",
+
       projectId: "latiao-finance",
+
       storageBucket: "latiao-finance.firebasestorage.app",
+
       messagingSenderId: "858773999156",
+
       appId: "1:858773999156:web:fe8f4907314f83c9a88461"
+
     };
+
+
 
     const app = initializeApp(firebaseConfig);
+
     const db = getFirestore(app);
+
     const auth = getAuth(app);
+
     try { setPersistence(auth, browserLocalPersistence).catch(console.error); } catch(e) {}
 
+
+
     // --- THEME CONFIGURATION ---
+
     const THEMES = {
+
         none: { // Standard Business
+
             '--brand-50': '#fff1ec', '--brand-100': '#ffe4d9', '--brand-500': '#FF5722', '--brand-600': '#ea580c', '--brand-700': '#c2410c',
+
             '--bg-50': '#F8FAFC', '--bg-100': '#F1F5F9', '--bg-200': '#E2E8F0',
+
             '--card-bg': '#1e293b', '--text-main': '#0f172a', '--text-sec': '#334155'
+
         },
+
         winter: { // Icy Blue
+
             '--brand-50': '#f0f9ff', '--brand-100': '#e0f2fe', '--brand-500': '#0ea5e9', '--brand-600': '#0284c7', '--brand-700': '#0369a1',
+
             '--bg-50': '#f5fbff', '--bg-100': '#e0f2fe', '--bg-200': '#bae6fd',
+
             '--card-bg': '#0c4a6e', '--text-main': '#082f49', '--text-sec': '#334155'
+
         },
+
         spring: { // Fresh Green/Pink
+
             '--brand-50': '#fdf2f8', '--brand-100': '#fce7f3', '--brand-500': '#db2777', '--brand-600': '#be185d', '--brand-700': '#9d174d',
+
             '--bg-50': '#f0fdf4', '--bg-100': '#dcfce7', '--bg-200': '#bbf7d0',
+
             '--card-bg': '#14532d', '--text-main': '#064e3b', '--text-sec': '#166534'
+
         },
+
         summer: { // Sunny Orange/Yellow
+
             '--brand-50': '#fffbeb', '--brand-100': '#fef3c7', '--brand-500': '#f59e0b', '--brand-600': '#d97706', '--brand-700': '#b45309',
+
             '--bg-50': '#fff7ed', '--bg-100': '#ffedd5', '--bg-200': '#fed7aa',
+
             '--card-bg': '#7c2d12', '--text-main': '#451a03', '--text-sec': '#78350f'
+
         },
+
         autumn: { // Cozy Brown/Red
+
              '--brand-50': '#fff1f2', '--brand-100': '#ffe4e6', '--brand-500': '#e11d48', '--brand-600': '#be123c', '--brand-700': '#9f1239',
+
             '--bg-50': '#fffcf5', '--bg-100': '#fee2e2', '--bg-200': '#ffedd5',
+
             '--card-bg': '#450a0a', '--text-main': '#450a0a', '--text-sec': '#7f1d1d'
+
         }
+
     };
+
+
 
     const { useState, useEffect, useMemo, Component } = React;
 
+
+
     class ErrorBoundary extends Component {
+
         constructor(props) { super(props); this.state = { hasError: false }; }
+
         static getDerivedStateFromError(error) { return { hasError: true }; }
+
         componentDidCatch(error, errorInfo) { console.error("React Error:", error, errorInfo); }
+
         render() {
+
             if (this.state.hasError) {
+
                 return <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white p-6 text-center"><div><h1 className="text-3xl mb-4">😵 Система відновлюється...</h1><button onClick={()=>{localStorage.clear();window.location.reload()}} className="bg-brand-500 px-6 py-3 rounded-xl font-bold">Натисніть для старту</button></div></div>;
+
             }
+
             return this.props.children;
+
         }
+
     }
 
+
+
     const Icon = ({ name, size = 18, className }) => {
+
         useEffect(() => { try { if(window.lucide) window.lucide.createIcons(); } catch(e){} }, [name]);
+
         return <i data-lucide={name} width={size} height={size} className={className}></i>;
+
     };
 
+
+
     const DEFAULT_CATEGORIES = {
+
         income: ['Продажі', 'Кешбек', 'Повернення', 'Інше'],
+
         expense: ['Закупівля (COGS)', 'Реклама', 'Логістика', 'Пакування', 'Зарплата', 'Податки', 'Оренда', 'Комісії', 'Знижки', 'Інше']
+
     };
+
+
 
     const DEFAULT_BANKS = ['Monobank ФОП', 'NovaPay', 'Готівка'];
 
+
+
     const ALL_VIEWS = [
+
         {id:'dashboard', label:'Огляд', icon:'layout-grid', mobile: true},
+
         {id:'procurement', label:'Закупівля', icon:'shopping-cart', mobile: true},
+
         {id:'ops', label:'Операції', icon:'list-checks', mobile: true},
+
         {id:'pnl', label:'P&L', icon:'pie-chart', mobile: true},
+
         {id:'cashflow', label:'CashFlow', icon:'banknote', mobile: true},
+
         {id:'dividends', label:'Дивіденди', icon:'gem', mobile: false}, 
+
         {id:'managers', label:'Команда', icon:'users-round', mobile: false},
+
         {id:'settings', label:'Налаштування', icon:'sliders-horizontal', mobile: true}
+
     ];
 
+
+
     const SeasonalEffects = ({ effect }) => {
+
         if (!effect || effect === 'none') return null;
+
         const particles = useMemo(() => Array.from({length:15}, (_,i)=>({id:i, left:Math.random()*100, anim:5+Math.random()*10, delay:Math.random()*5, size:10+Math.random()*20})), [effect]);
+
         
+
         let symbol = '❄';
+
         let className = 'snow';
+
         if(effect === 'autumn') { symbol = '🍁'; className = 'leaf'; }
+
         if(effect === 'spring') { symbol = '🌸'; className = 'flower'; }
+
         if(effect === 'summer') { symbol = '☀️'; className = 'sun'; }
 
+
+
         return <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">{particles.map(p=><div key={p.id} className={`particle ${className}`} style={{left:`${p.left}%`,animationDuration:`${p.anim}s`,animationDelay:`${p.delay}s`,fontSize:`${p.size}px`}}>{symbol}</div>)}</div>;
+
     };
+
+
 
     // --- NEW: THEME DECORATIONS ---
+
     const ThemeDecorations = ({ effect }) => {
+
         if (effect === 'winter') return (
+
             <>
+
                 <div className="deco-hanging right-[10%] text-4xl">🎄</div>
+
                 <div className="deco-hanging left-[5%] text-3xl" style={{animationDelay:'1s'}}>🎁</div>
+
                 <div className="deco-hanging right-[30%] text-2xl" style={{animationDelay:'0.5s'}}>❄️</div>
+
             </>
+
         );
+
         if (effect === 'autumn') return (
+
             <>
+
                 <div className="deco-ground right-[5%] text-4xl">🍄</div>
+
                 <div className="deco-ground left-[10%] text-3xl">🍂</div>
+
             </>
+
         );
+
         if (effect === 'spring') return (
+
             <>
+
                 <div className="deco-hanging left-[0%] text-4xl text-pink-300">🌸</div>
+
                 <div className="deco-hanging right-[0%] text-4xl text-pink-300" style={{animationDelay:'1.5s'}}>🌸</div>
+
             </>
+
         );
+
         if (effect === 'summer') return (
+
             <>
+
                 <div className="deco-hanging right-[5%] text-5xl text-yellow-400">☀️</div>
+
                 <div className="deco-ground left-[20%] text-3xl">🌻</div>
+
             </>
+
         );
+
         return null;
+
     };
+
+
 
     // --- VIEW COMPONENTS ---
+
     const DashboardView = ({ metrics, transactions, setView, banks }) => {
+
         const topExp = metrics.topExpense || { name: '-', val: 0 };
+
         const safeBanks = Array.isArray(banks) ? banks : DEFAULT_BANKS;
+
         return (
+
             <div className="space-y-6 animate-fade-in pb-24 md:pb-0">
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+
                     <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl relative overflow-hidden group">
+
                         <div className="absolute right-[-20px] top-[-20px] opacity-10 group-hover:scale-110 transition-transform"><Icon name="wallet" size={140}/></div>
+
                         <div className="relative z-10"><div className="text-slate-400 text-xs font-bold uppercase mb-2">Гроші в касі</div><div className="text-3xl font-mono font-bold">{metrics.totalCash.toLocaleString()} ₴</div></div>
+
                     </div>
+
                     <div className="card-modern p-6 border-l-4 border-brand-500">
+
                         <div className="text-slate-700 text-xs font-bold uppercase mb-2">Чистий Прибуток</div>
+
                         <div className={`text-3xl font-mono font-bold ${metrics.net >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{metrics.net.toLocaleString()} ₴</div>
+
                         <div className="mt-2 text-xs font-bold bg-slate-100 text-slate-700 inline-block px-2 py-1 rounded">Маржа: {metrics.margin}%</div>
+
                     </div>
+
                     <div className="card-modern p-6 border-t-4 border-brand-500">
+
                         <div className="text-slate-700 text-xs font-bold uppercase mb-2">Запас ходу</div><div className="text-3xl font-mono font-bold text-brand-500">{metrics.runway} днів</div>
+
                     </div>
+
                 </div>
+
+
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
                     <div className="card-modern p-6">
+
                         <h3 className="font-bold text-lg mb-4 text-slate-900">Рахунки</h3>
+
                         <div className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scroll">
+
                             {safeBanks.map(bank => (
+
                                 <div key={bank} className="flex justify-between items-center p-3 bg-slate-100 rounded-xl border border-slate-200">
+
                                     <span className="font-bold text-sm flex items-center gap-2 text-slate-700">
+
                                         <div className="w-6 h-6 bg-slate-200 rounded-full flex items-center justify-center text-[10px]"><Icon name="credit-card" size={12}/></div> {bank}
+
                                     </span>
+
                                     <span className="font-mono font-bold text-slate-900">{(metrics.balances[bank] || 0).toLocaleString()} ₴</span>
+
                                 </div>
+
                             ))}
+
                         </div>
+
                     </div>
+
                     <div className="card-modern p-6 flex flex-col justify-between">
+
                          <div>
+
                             <h3 className="font-bold text-lg mb-4 text-slate-900">Аналітика</h3>
+
                             <div className="grid grid-cols-2 gap-4 mb-4">
+
                                 <div className="bg-brand-50 p-3 rounded-xl text-center"><div className="text-xs text-brand-600 font-bold mb-1">Топ витрата</div><div className="text-sm font-bold text-slate-900 truncate">{topExp.name}</div><div className="text-xs text-slate-500">-{topExp.val.toLocaleString()} ₴</div></div>
+
                                 <div className="bg-emerald-50 p-3 rounded-xl text-center"><div className="text-xs text-emerald-600 font-bold mb-1">Середній чек</div><div className="text-lg font-bold text-slate-900">{metrics.avgTicket} ₴</div></div>
+
                             </div>
+
                         </div>
+
                         <button onClick={()=>setView('pnl')} className="w-full py-2 bg-slate-100 text-slate-900 rounded-lg text-sm font-bold hover:bg-slate-200">Детальний P&L звіт →</button>
+
                     </div>
+
                 </div>
+
             </div>
+
         );
+
     };
+
+
 
     const ProcurementView = ({ db, banks, logAction }) => {
+
         const safeBanks = Array.isArray(banks) && banks.length > 0 ? banks : DEFAULT_BANKS;
+
         const [form, setForm] = useState({ desc: '', amount: '', bank: safeBanks[0], date: new Date().toISOString().split('T')[0] });
+
         
+
         const submit = async () => {
+
             if (!form.desc || !form.amount) return alert("Заповніть опис та суму");
+
             try {
+
                 await addDoc(collection(db, "transactions"), { description: form.desc, amount: Number(form.amount), cat: "Закупівля (COGS)", source: form.bank, type: "expense", isDividend: false, date: new Date(form.date).toLocaleDateString('uk-UA'), createdAt: Date.now() });
+
                 logAction("Створено закупівлю", `${form.amount} ₴ - ${form.desc}`);
+
                 setForm({ desc: '', amount: '', bank: safeBanks[0], date: new Date().toISOString().split('T')[0] });
+
                 alert("Закупівлю додано!");
+
             } catch (e) { alert("Помилка: " + e.message); }
+
         };
 
+
+
         return (
+
             <div className="max-w-xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-0">
+
                 <div className="card-modern p-6 border-t-4 border-brand-500">
+
                     <h2 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2"><Icon name="shopping-cart" className="text-brand-500"/> Нова Закупівля</h2>
+
                     <div className="space-y-4">
+
                         <div><label className="text-xs font-bold text-slate-500 uppercase ml-1">Що купили?</label><input value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className="w-full border p-4 rounded-xl text-lg font-bold bg-slate-50 text-slate-900" placeholder="Назва товару..."/></div>
+
                         <div className="grid grid-cols-2 gap-4">
+
                             <div><label className="text-xs font-bold text-slate-500 uppercase ml-1">Сума</label><input type="number" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="w-full border p-4 rounded-xl text-lg font-mono font-bold bg-slate-50 text-slate-900" placeholder="0.00"/></div>
+
                             <div><label className="text-xs font-bold text-slate-500 uppercase ml-1">Дата</label><input type="date" value={form.date} onChange={e=>setForm({...form, date:e.target.value})} className="w-full border p-4 rounded-xl text-sm font-bold bg-slate-50 text-slate-900"/></div>
+
                         </div>
+
                         <div><label className="text-xs font-bold text-slate-500 uppercase ml-1">З рахунку</label><select value={form.bank} onChange={e=>setForm({...form, bank:e.target.value})} className="w-full border p-4 rounded-xl text-sm font-bold bg-slate-50 text-slate-900">{safeBanks.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
+
                         <button onClick={submit} className="w-full bg-brand-600 hover:bg-brand-700 text-white py-4 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition flex items-center justify-center gap-2"><Icon name="check-circle"/> Додати витрату</button>
+
                     </div>
+
                 </div>
+
             </div>
+
         );
+
     };
+
+
 
     const PnLView = ({ metrics, transactions }) => {
+
         const getPct = (val) => metrics.revenue ? ((val / metrics.revenue) * 100).toFixed(1) : 0;
+
         const opExItems = transactions.filter(t => t.type === 'expense' && !t.isDividend && t.cat !== 'Закупівля (COGS)').reduce((acc, t) => { const existing = acc.find(i => i.cat === t.cat); if (existing) existing.val += Number(t.amount); else acc.push({ cat: t.cat, val: Number(t.amount) }); return acc; }, []).sort((a, b) => b.val - a.val);
 
+
+
         return (
+
             <div className="space-y-6 animate-fade-in max-w-4xl mx-auto pb-24 md:pb-0">
+
                 <div className="info-box bg-blue-50 border-blue-200 text-blue-900"><h3 className="font-bold flex items-center gap-2 mb-2"><Icon name="info" size={18}/> Що таке P&L?</h3><p className="text-sm">Це звіт про прибутки та збитки. Він показує, скільки бізнес реально заробив.</p></div>
+
                 <div className="card-modern p-6 border-l-8 border-emerald-500"><div className="text-sm font-bold text-emerald-700 uppercase mb-1">Виручка</div><div className="text-4xl font-mono font-bold text-slate-900 dark:text-white">+{metrics.revenue.toLocaleString()} ₴</div></div>
+
                 <div className="grid md:grid-cols-2 gap-4">
+
                     <div className="card-modern p-5"><div className="text-xs font-bold text-slate-400 uppercase mb-2">(-) Собівартість (COGS)</div><div className="text-2xl font-mono font-bold text-slate-700">-{metrics.cogs.toLocaleString()} ₴</div><div className="mt-2 text-xs font-bold text-orange-500">{getPct(metrics.cogs)}% від виручки</div></div>
+
                     <div className="card-modern p-5 bg-blue-50 border-blue-100"><div className="text-xs font-bold text-blue-600 uppercase mb-2">(=) Валовий Прибуток</div><div className="text-2xl font-mono font-bold text-blue-900">{(metrics.revenue - metrics.cogs).toLocaleString()} ₴</div><div className="mt-2 text-xs font-bold text-blue-600">Маржа: {getPct(metrics.revenue - metrics.cogs)}%</div></div>
+
                 </div>
+
                 <div className="card-modern p-6"><div className="flex justify-between items-center mb-4"><div className="text-sm font-bold text-slate-500 uppercase">(-) Операційні витрати</div><div className="font-bold text-red-500">-{metrics.opex.toLocaleString()} ₴</div></div><div className="space-y-3">{opExItems.map(item => (<div key={item.cat} className="flex items-center gap-3 text-sm"><div className="w-32 font-bold text-slate-600 truncate">{item.cat}</div><div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-red-400 rounded-full" style={{width: `${getPct(item.val)}%`}}></div></div><div className="w-24 text-right font-mono text-slate-700">{item.val.toLocaleString()}</div><div className="w-12 text-right text-xs text-slate-400">{getPct(item.val)}%</div></div>))}</div></div>
+
                 <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-xl flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left"><div><div className="text-sm font-bold text-slate-400 uppercase mb-1">(=) Чистий Прибуток</div><div className={`text-5xl font-mono font-bold ${metrics.net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{metrics.net.toLocaleString()} ₴</div></div><div className="md:text-right"><div className="text-2xl font-bold">{getPct(metrics.net)}%</div><div className="text-xs text-slate-400 uppercase">Рентабельність</div></div></div>
+
             </div>
+
         );
+
     };
 
-    const CashFlowView = ({ metrics }) => (
-        <div className="max-w-4xl mx-auto animate-fade-in space-y-6 pb-24 md:pb-0">
-             <div className="info-box bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-900 dark:text-purple-100"><h3 className="font-bold flex items-center gap-2 mb-2"><Icon name="book-open" size={18}/> Cash Flow</h3><p className="text-sm">Показує реальний рух грошей.</p></div>
-            <div className="card-modern p-6 border-l-4 border-l-blue-500"><h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-slate-200">1. Операційна діяльність</h3><div className="space-y-2"><div className="flex justify-between text-slate-700 dark:text-slate-300"><span>Надходження</span><span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">+{metrics.revenue.toLocaleString()}</span></div><div className="flex justify-between text-slate-700 dark:text-slate-300"><span>Виплати</span><span className="font-mono font-bold text-red-600 dark:text-red-400">-{metrics.totalExpense.toLocaleString()}</span></div><div className="border-t dark:border-slate-700 pt-2 flex justify-between font-bold text-slate-900 dark:text-white"><span>Чистий потік</span><span>{metrics.operationalCashFlow.toLocaleString()} ₴</span></div></div></div>
-            <div className="card-modern p-6 border-l-4 border-l-purple-500"><h3 className="font-bold text-lg mb-4 text-slate-800 dark:text-slate-200">2. Фінансова діяльність</h3><div className="space-y-2"><div className="flex justify-between text-slate-700 dark:text-slate-300"><span>Виплата дивідендів</span><span className="font-mono font-bold text-purple-600 dark:text-purple-400">-{metrics.dividends.toLocaleString()}</span></div></div></div>
-             <div className="bg-slate-900 dark:bg-slate-800 text-white p-6 rounded-3xl shadow-xl flex justify-between items-center"><div><h3 className="text-lg font-bold mb-1">Net Cash Change</h3><p className="text-xs text-slate-400">Зміна каси за період</p></div><div className={`text-3xl font-mono font-bold ${metrics.netCashChange >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{metrics.netCashChange > 0 ? '+' : ''}{metrics.netCashChange.toLocaleString()} ₴</div></div>
-        </div>
-    );
 
-    const DividendsView = ({ metrics, transactions, setModalType }) => (
-        <div className="max-w-4xl mx-auto animate-fade-in space-y-6 pb-24 md:pb-0">
-             <div className="info-box bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 text-indigo-900 dark:text-indigo-100"><h3 className="font-bold flex items-center gap-2 mb-2"><Icon name="gem" size={18}/> Дивіденди</h3><p className="text-sm">Це частина чистого прибутку, яку власник забирає собі.</p></div>
-            <div className="bg-slate-900 dark:bg-slate-800 text-white p-8 rounded-3xl shadow-xl text-center"><h2 className="text-2xl font-bold mb-6">Калькулятор виводу</h2><div className="grid grid-cols-3 gap-4 mb-6"><div className="bg-white/10 p-3 rounded-xl"><div className="text-[10px] uppercase text-slate-400">Прибуток</div><div className="text-lg font-mono font-bold text-emerald-400">{metrics.net.toLocaleString()}</div></div><div className="bg-white/10 p-3 rounded-xl"><div className="text-[10px] uppercase text-slate-400">Вже знято</div><div className="text-lg font-mono font-bold text-purple-400">{metrics.dividends.toLocaleString()}</div></div><div className="bg-emerald-500/20 p-3 rounded-xl border border-emerald-500/50"><div className="text-[10px] uppercase text-emerald-200 font-bold">Можна</div><div className="text-lg font-mono font-bold text-white">{(metrics.net - metrics.dividends).toLocaleString()}</div></div></div><button onClick={()=>setModalType('dividend')} className="w-full bg-white text-slate-900 py-3 rounded-xl font-bold hover:bg-slate-200 transition">Зафіксувати виплату</button></div>
-            <div className="card-modern p-6"><h3 className="font-bold text-slate-800 dark:text-slate-200 mb-4">Історія виплат</h3>{transactions.filter(t=>t.isDividend).map(t => (<div key={t.id} className="flex justify-between py-3 border-b border-slate-100 dark:border-slate-700 last:border-0"><div><div className="font-bold text-sm text-slate-700 dark:text-slate-300">Виплата</div><div className="text-xs text-slate-400">{t.date}</div></div><div className="font-bold text-purple-600 dark:text-purple-400 font-mono">-{t.amount.toLocaleString()} ₴</div></div>))}</div>
-        </div>
-    );
 
     const OpsView = ({ transactions, deleteTx, syncMono, canDelete, categories }) => {
+
         const [isSyncing, setIsSyncing] = useState(false);
+
         const [filters, setFilters] = useState({ date: '', source: 'all', type: 'all' });
+
         const [page, setPage] = useState(1);
+
         const [deleteId, setDeleteId] = useState(null);
+
         const ITEMS_PER_PAGE = 20;
+
         const handleSync = async () => { setIsSyncing(true); await syncMono(); setIsSyncing(false); };
+
         
+
         const filtered = transactions.filter(t => {
+
             if (filters.date && t.date) { const [y, m, d] = filters.date.split('-'); if (t.date !== `${d}.${m}.${y}`) return false; }
+
             if (filters.source !== 'all') { const src = t.source || ''; if (filters.source === 'mono' && !src.includes('Monobank')) return false; }
+
             if (filters.type !== 'all' && t.type !== filters.type) return false;
+
             return true;
+
         });
 
+
+
         const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+
         const paginatedData = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
+
+
         useEffect(() => { setPage(1); }, [filters]); 
+
         const confirmDelete = async (id) => { await deleteTx(id); setDeleteId(null); }
 
+
+
         return (
+
             <div className="space-y-6 animate-fade-in pb-24 md:pb-0">
+
                 <div className="card-modern p-4 bg-slate-100 sticky top-0 z-20 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center">
+
                     <div className="flex gap-2 overflow-x-auto no-scrollbar flex-1 pb-2 md:pb-0">
+
                         <input type="date" className="bg-white border rounded-lg px-2 py-2 text-xs min-w-[120px]" value={filters.date} onChange={e=>setFilters({...filters, date:e.target.value})} />
+
                         <select className="bg-white border rounded-lg px-2 py-2 text-xs" value={filters.type} onChange={e=>setFilters({...filters, type:e.target.value})}><option value="all">Всі типи</option><option value="income">Дохід</option><option value="expense">Витрата</option></select>
+
                         {(filters.date||filters.type!=='all')&&<button onClick={()=>setFilters({date:'',source:'all',type:'all'})} className="text-red-500 text-xs font-bold px-2 whitespace-nowrap">Скинути</button>}
+
                     </div>
+
                     <div className="flex gap-2 w-full md:w-auto">
+
                         <button onClick={handleSync} disabled={isSyncing} className="bg-slate-900 text-white px-3 py-3 md:py-2 rounded-lg text-xs font-bold whitespace-nowrap flex items-center justify-center gap-1 shadow-md flex-1 md:flex-none hover:bg-slate-800 transition active:scale-95"><Icon name="refresh-cw" size={14} className={isSyncing?"animate-spin":""}/> Mono</button>
+
                     </div>
+
                 </div>
+
+
 
                 <div className="card-modern overflow-hidden">
+
                     <div className="divide-y divide-slate-100">
+
                         {paginatedData.map(t => (
+
                             <div key={t.id} className="p-4 flex justify-between items-start active:bg-slate-50 transition hover:bg-slate-50">
+
                                 <div>
+
                                     <div className="font-bold text-sm text-slate-900 line-clamp-1">{t.description}</div>
+
                                     <div className="text-xs text-slate-500 mt-1 flex gap-2"><span className="bg-slate-100 px-1.5 rounded">{t.date}</span><span className="bg-slate-100 px-1.5 rounded text-slate-600">{t.cat}</span></div>
+
                                 </div>
+
                                 <div className="text-right flex flex-col items-end gap-1">
+
                                     <div className={`font-mono font-bold ${t.type==='income'?'text-emerald-600':'text-slate-900'}`}>{t.type==='income'?'+':'-'}{(Number(t.amount)||0).toLocaleString()}</div>
+
                                     {canDelete && <button onClick={()=>setDeleteId(t.id)} className="text-slate-300 hover:text-red-500 p-1"><Icon name="trash-2" size={14}/></button>}
+
                                 </div>
+
                             </div>
+
                         ))}
+
                     </div>
+
                     {filtered.length > ITEMS_PER_PAGE && (
+
                         <div className="p-4 flex justify-center gap-4 border-t border-slate-100 bg-slate-50">
+
                             <button disabled={page===1} onClick={()=>setPage(p=>p-1)} className="px-4 py-2 bg-white border rounded-lg text-xs font-bold disabled:opacity-50">Назад</button>
+
                             <span className="text-xs font-bold flex items-center text-slate-600">{page} / {totalPages}</span>
+
                             <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)} className="px-4 py-2 bg-white border rounded-lg text-xs font-bold disabled:opacity-50">Далі</button>
+
                         </div>
+
                     )}
+
                 </div>
+
                 {deleteId && <DeleteConfirmModal id={deleteId} close={()=>setDeleteId(null)} confirm={confirmDelete} />}
+
             </div>
+
         );
+
     };
+
+
 
     const DeleteConfirmModal = ({ id, close, confirm }) => {
+
         const [input, setInput] = useState('');
+
         return (
+
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in"><div className="bg-white rounded-3xl w-full max-w-sm p-6 text-center shadow-2xl"><div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500"><Icon name="alert-triangle" size={24}/></div><h3 className="text-lg font-bold text-slate-900 mb-2">Підтвердіть видалення</h3><p className="text-sm text-slate-500 mb-4">Напишіть слово <b>видалити</b> (маленькими).</p><input type="text" value={input} onChange={e=>setInput(e.target.value)} className="w-full border bg-transparent p-3 rounded-xl text-center mb-4 font-bold outline-none focus:border-red-500 text-slate-900" placeholder="видалити"/><div className="flex gap-2"><button onClick={close} className="flex-1 py-3 text-slate-500 font-bold bg-slate-100 rounded-xl">Скасувати</button><button disabled={input !== 'видалити'} onClick={()=>confirm(id)} className="flex-1 py-3 text-white font-bold bg-red-500 rounded-xl disabled:opacity-50">Видалити</button></div></div></div>
+
         );
+
     };
+
+
 
     const ManagersView = ({ db, logAction }) => {
+
         const [managers, setManagers] = useState([]);
+
         const [logs, setLogs] = useState([]);
+
         const [showModal, setShowModal] = useState(false);
+
         const [editingManager, setEditingManager] = useState(null);
+
         useEffect(() => { const q = query(collection(db, "managers")); const unsub = onSnapshot(q, (snap) => setManagers(snap.docs.map(d => ({ id: d.id, ...d.data() })))); return () => unsub(); }, []);
+
         useEffect(() => { const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(50)); const unsub = onSnapshot(q, (snap) => setLogs(snap.docs.map(d => ({ id: d.id, ...d.data() })))); return () => unsub(); }, []);
+
         const deleteManager = async (id) => { if(confirm("Видалити менеджера?")) { await deleteDoc(doc(db, "managers", id)); logAction("Видалення менеджера", `ID: ${id}`); } };
+
         const openAdd = () => { setEditingManager(null); setShowModal(true); };
+
         const openEdit = (manager) => { setEditingManager(manager); setShowModal(true); };
 
+
+
         return (
+
             <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-0 flex flex-col lg:flex-row gap-6">
+
                 <div className="flex-1 space-y-6">
+
                     <div className="flex justify-between items-center card-modern p-6">
+
                         <h2 className="text-xl font-bold text-slate-900">Команда</h2>
+
                         <button onClick={openAdd} className="bg-slate-900 text-white px-4 py-2 rounded-xl font-bold text-sm">+ Додати</button>
+
                     </div>
+
                     <div className="grid md:grid-cols-2 gap-4">
+
                         {managers.map(m => {
+
                             const isOnline = m.lastSeen && (Date.now() - m.lastSeen < 120000); 
+
                             const lastSeenText = m.lastSeen ? new Date(m.lastSeen).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : 'Невідомо';
+
                             return (
+
                                 <div key={m.id} className="card-modern p-5 relative">
+
                                     <div className="absolute top-4 right-4 flex gap-2"><button onClick={()=>openEdit(m)} className="text-slate-400 bg-slate-50 p-2 rounded-lg"><Icon name="pencil" size={16}/></button><button onClick={()=>deleteManager(m.id)} className="text-red-400 bg-red-50 p-2 rounded-lg"><Icon name="trash-2" size={16}/></button></div>
+
                                     <div className="flex items-center gap-4 mb-4"><div className="relative"><div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-bold text-xl">{m.name?.[0]||'U'}</div><div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`}></div></div><div><div className="font-bold text-slate-900">{m.name}</div><div className="text-xs text-slate-400 flex items-center gap-1">{isOnline ? <span className="text-emerald-500 font-bold">Online</span> : <span>Був: {lastSeenText}</span>}</div></div></div>
+
                                      <div className="text-xs text-slate-400 bg-slate-50 p-2 rounded-lg mb-2 truncate">Доступ: {(m.permissions||[]).join(', ')}</div>
+
                                      <div className="text-xs text-slate-400">Логін: {m.email}</div>
+
                                 </div>
+
                             );
+
                         })}
+
                     </div>
+
                 </div>
+
                 <div className="lg:w-80 w-full space-y-4">
+
                     <h3 className="font-bold text-slate-900 px-2">Історія дій</h3>
+
                     <div className="card-modern p-0 overflow-hidden h-[500px] overflow-y-auto no-scrollbar bg-slate-50">
+
                         {logs.length === 0 ? <div className="p-6 text-center text-slate-400 text-xs">Історія порожня</div> :
+
                         <div className="divide-y divide-slate-200">{logs.map(log => (<div key={log.id} className="p-3 text-xs"><div className="flex justify-between text-slate-400 mb-1"><span className="font-bold text-slate-700">{log.name}</span><span>{new Date(log.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div><div className="font-medium text-slate-900 mb-0.5">{log.action}</div><div className="text-slate-400 truncate">{log.details}</div></div>))}</div>}
+
                     </div>
+
                 </div>
+
                 {showModal && <ManagerModal db={db} close={()=>setShowModal(false)} initialData={editingManager} logAction={logAction} />}
+
             </div>
+
         );
+
     };
+
+
 
     const ManagerModal = ({ db, close, initialData, logAction }) => {
+
         const [form, setForm] = useState(initialData || { name: '', email: '', password: '', permissions: ['dashboard', 'ops'] });
+
         const isEdit = !!initialData;
+
         const togglePerm = (p) => setForm(prev => { const currentPerms = prev.permissions || []; const newPerms = currentPerms.includes(p) ? currentPerms.filter(x => x !== p) : [...currentPerms, p]; return { ...prev, permissions: newPerms }; });
+
         const submit = async () => {
+
             if(!form.name || !form.email) return alert("Заповніть поля");
+
             try { 
+
                 if(isEdit) { await updateDoc(doc(db, "managers", initialData.id), form); logAction("Редагування менеджера", form.name); } 
+
                 else { await addDoc(collection(db, "managers"), form); logAction("Створення менеджера", form.name); }
+
                 close(); 
+
             } catch(e) { alert(e.message); }
+
         };
+
         const VIEWS_TO_SELECT = ALL_VIEWS.filter(v => v.id !== 'settings' && v.id !== 'managers');
+
         return (
+
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"><div className="card-modern w-full max-w-md p-6 animate-fade-in"><h3 className="font-bold text-lg mb-4 text-slate-900">{isEdit ? "Редагування" : "Новий менеджер"}</h3><div className="space-y-3"><input placeholder="Ім'я" value={form.name} onChange={e=>setForm({...form, name:e.target.value})} className="w-full border p-3 rounded-xl bg-slate-50"/><input placeholder="Email" value={form.email} onChange={e=>setForm({...form, email:e.target.value})} className="w-full border p-3 rounded-xl bg-slate-50"/><input placeholder="Пароль" value={form.password} onChange={e=>setForm({...form, password:e.target.value})} className="w-full border p-3 rounded-xl bg-slate-50"/><div className="grid grid-cols-2 gap-2">{VIEWS_TO_SELECT.map(v => (<label key={v.id} className="flex items-center gap-2 p-2 border rounded-lg bg-slate-50"><input type="checkbox" checked={(form.permissions||[]).includes(v.id)} onChange={()=>togglePerm(v.id)} /><span className="text-xs text-slate-600">{v.label}</span></label>))}</div><button onClick={submit} className="w-full bg-brand-500 text-white py-3 rounded-xl font-bold mt-2">Зберегти</button><button onClick={close} className="w-full py-3 text-slate-400">Скасувати</button></div></div></div>
+
         );
+
     };
+
+
 
     const SettingsView = ({ settings, setSettings, saveSettings, syncMono, deleteAllTransactions, categories, saveCategories, themeEffect, setThemeEffect, setView, logAction, banks, setBanks, saveBanks }) => {
+
         const [newCatIn, setNewCatIn] = useState(''); const [newCatOut, setNewCatOut] = useState(''); const [newBank, setNewBank] = useState('');
+
         const addCat = (t, v, setter) => { if(!v) return; const newCats = {...categories, [t]: [...(categories?.[t]||[]), v]}; saveCategories(newCats); logAction("Додавання категорії", v); setter(''); };
+
         const removeCat = (t, v) => { if(confirm('Видалити?')) { const newCats = {...categories, [t]: categories[t].filter(c=>c!==v)}; saveCategories(newCats); logAction("Видалення категорії", v); } };
+
         
+
         const addBank = () => { if(!newBank) return; const newB = [...banks, newBank]; saveBanks(newB); setNewBank(''); logAction("Додавання банку", newBank); };
+
         const removeBank = (b) => { if(confirm('Видалити банк?')) { const newB = banks.filter(x=>x!==b); saveBanks(newB); logAction("Видалення банку", b); } };
 
+
+
         return (
+
             <div className="max-w-4xl mx-auto space-y-6 animate-fade-in pb-24 md:pb-0">
+
                 <div className="md:hidden card-modern p-4 flex items-center justify-between active:bg-slate-50 transition" onClick={()=>setView('dividends')}>
+
                     <div className="flex items-center gap-3"><div className="bg-indigo-100 p-2 rounded-xl text-indigo-600"><Icon name="gem" size={24}/></div><span className="font-bold text-slate-800 dark:text-white">Перейти до Дивідендів</span></div><Icon name="chevron-right" size={20} className="text-slate-400"/>
+
                 </div>
 
+
+
                 <div className="card-modern p-6">
+
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><Icon name="palette"/> Атмосфера (Тема)</h2>
+
                     <div className="grid grid-cols-3 gap-3">
+
                         <button onClick={()=>setThemeEffect('none')} className={`p-3 rounded-xl border text-sm font-bold transition ${themeEffect==='none' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'text-slate-500 border-slate-200'}`}>Звичайна</button>
+
                         <button onClick={()=>setThemeEffect('winter')} className={`p-3 rounded-xl border text-sm font-bold transition ${themeEffect==='winter' ? 'bg-blue-500 text-white border-blue-500' : 'text-blue-500 border-blue-200'}`}>❄️ Зима</button>
+
                         <button onClick={()=>setThemeEffect('spring')} className={`p-3 rounded-xl border text-sm font-bold transition ${themeEffect==='spring' ? 'bg-green-500 text-white border-green-500' : 'text-green-500 border-green-200'}`}>🌸 Весна</button>
+
                         <button onClick={()=>setThemeEffect('summer')} className={`p-3 rounded-xl border text-sm font-bold transition ${themeEffect==='summer' ? 'bg-yellow-500 text-white border-yellow-500' : 'text-yellow-500 border-yellow-200'}`}>☀️ Літо</button>
+
                         <button onClick={()=>setThemeEffect('autumn')} className={`p-3 rounded-xl border text-sm font-bold transition ${themeEffect==='autumn' ? 'bg-orange-500 text-white border-orange-500' : 'text-orange-500 border-orange-200'}`}>🍁 Осінь</button>
+
                     </div>
+
                 </div>
+
+
 
                 {/* BANK MANAGEMENT */}
+
                 <div className="card-modern p-6">
+
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><Icon name="credit-card"/> Мої Рахунки/Банки</h2>
+
                     <div className="flex gap-2 mb-4"><input type="text" value={newBank} onChange={e=>setNewBank(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Назва банку..."/><button onClick={addBank} className="bg-slate-800 text-white p-2 rounded-lg">+</button></div>
+
                     <div className="flex flex-wrap gap-2">
+
                         {banks.map(b => (
+
                             <span key={b} className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-white text-xs px-2 py-1 rounded border border-slate-200 dark:border-slate-600 flex items-center gap-1">{b} {(!DEFAULT_BANKS.includes(b)) && <button onClick={()=>removeBank(b)}>x</button>}</span>
+
                         ))}
+
                     </div>
+
+                </div>
+
+
+
+                <div className="card-modern p-6">
+
+                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><Icon name="tags"/> Категорії</h2>
+
+                    <div className="space-y-6">
+
+                        <div><div className="flex gap-2 mb-2"><input type="text" value={newCatIn} onChange={e=>setNewCatIn(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Дохід..."/><button onClick={()=>addCat('income',newCatIn,setNewCatIn)} className="bg-emerald-500 text-white p-2 rounded-lg">+</button></div><div className="flex flex-wrap gap-2">{(categories?.income||[]).map(c => (<span key={c} className="bg-emerald-50 text-emerald-700 text-xs px-2 py-1 rounded border border-emerald-100 flex items-center gap-1">{c} <button onClick={()=>removeCat('income',c)}>x</button></span>))}</div></div>
+
+                        <div><div className="flex gap-2 mb-2"><input type="text" value={newCatOut} onChange={e=>setNewCatOut(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Витрата..."/><button onClick={()=>addCat('expense',newCatOut,setNewCatOut)} className="bg-brand-500 text-white p-2 rounded-lg">+</button></div><div className="flex flex-wrap gap-2">{(categories?.expense||[]).map(c => (<span key={c} className="bg-orange-50 text-brand-600 text-xs px-2 py-1 rounded border border-orange-100 flex items-center gap-1">{c} <button onClick={()=>removeCat('expense',c)}>x</button></span>))}</div></div>
+
+                    </div>
+
                 </div>
 
                 <div className="card-modern p-6">
-                    <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><Icon name="tags"/> Категорії</h2>
-                    <div className="space-y-6">
-                        <div><div className="flex gap-2 mb-2"><input type="text" value={newCatIn} onChange={e=>setNewCatIn(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Дохід..."/><button onClick={()=>addCat('income',newCatIn,setNewCatIn)} className="bg-emerald-500 text-white p-2 rounded-lg">+</button></div><div className="flex flex-wrap gap-2">{(categories?.income||[]).map(c => (<span key={c} className="bg-emerald-50 text-emerald-700 text-xs px-2 py-1 rounded border border-emerald-100 flex items-center gap-1">{c} <button onClick={()=>removeCat('income',c)}>x</button></span>))}</div></div>
-                        <div><div className="flex gap-2 mb-2"><input type="text" value={newCatOut} onChange={e=>setNewCatOut(e.target.value)} className="flex-1 border rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Витрата..."/><button onClick={()=>addCat('expense',newCatOut,setNewCatOut)} className="bg-brand-500 text-white p-2 rounded-lg">+</button></div><div className="flex flex-wrap gap-2">{(categories?.expense||[]).map(c => (<span key={c} className="bg-orange-50 text-brand-600 text-xs px-2 py-1 rounded border border-orange-100 flex items-center gap-1">{c} <button onClick={()=>removeCat('expense',c)}>x</button></span>))}</div></div>
-                    </div>
-                </div>
-                <div className="card-modern p-6">
+
                     <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-800 dark:text-white"><Icon name="link"/> Інтеграції (Банки)</h2>
-                    <div className="space-y-2"><input value={settings.monoKey} onChange={e=>setSettings({...settings, monoKey:e.target.value})} placeholder="X-Token" className="w-full border p-3 rounded-xl text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"/><div className="flex gap-2"><input value={settings.monoAccountId} onChange={e=>setSettings({...settings, monoAccountId:e.target.value})} placeholder="ID Рахунку" className="w-full border p-3 rounded-xl text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"/><button onClick={syncMono} className="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm whitespace-nowrap">Рахунки</button></div></div>
+
+                    <div className="space-y-6">
+
+                        <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700"><h3 className="font-bold text-sm mb-3 flex items-center gap-2"><div className="w-5 h-5 bg-black rounded flex items-center justify-center text-white text-[10px]">M</div> Monobank / Еквайринг</h3><div className="space-y-2"><input value={settings.monoKey} onChange={e=>setSettings({...settings, monoKey:e.target.value})} placeholder="X-Token" className="w-full border p-3 rounded-xl text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"/><div className="flex gap-2"><input value={settings.monoAccountId} onChange={e=>setSettings({...settings, monoAccountId:e.target.value})} placeholder="ID Рахунку" className="w-full border p-3 rounded-xl text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white"/><button onClick={syncMono} className="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm whitespace-nowrap">Рахунки</button></div></div></div>
+
+                         <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30"><h3 className="font-bold text-sm mb-3 text-red-700 dark:text-red-400 flex items-center gap-2"><div className="w-5 h-5 bg-red-600 rounded flex items-center justify-center text-white text-[10px]">N</div> NovaPay (Контроль оплат)</h3><div className="space-y-2"><textarea value={settings.novaKey} onChange={e=>setSettings({...settings, novaKey:e.target.value})} placeholder="Публічний ключ (Public Key)" className="w-full border p-3 rounded-xl text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white h-24 font-mono text-[10px]"/><button onClick={()=>{alert("NovaPay: Симуляція успішна. Перевірте список операцій.");logAction("Sync Nova", "OK")}} className="bg-red-600 text-white w-full py-2 rounded-xl text-sm font-bold shadow-sm">Синхронізувати NovaPay</button></div></div>
+
+                    </div>
+
                     <button onClick={()=>saveSettings(settings)} className="bg-brand-500 text-white w-full py-3 rounded-xl font-bold mt-4 shadow-lg">Зберегти налаштування</button>
+
                 </div>
+
                 <button onClick={deleteAllTransactions} className="w-full border border-red-200 text-red-500 py-3 rounded-xl text-sm font-bold bg-red-50 dark:bg-red-900/20 dark:border-red-900">Очистити базу</button>
+
             </div>
+
         );
+
     };
+
+
 
     const TransactionModal = ({ type, close, categories, logAction, banks }) => {
+
         // Fallback for banks
+
         const safeBanks = Array.isArray(banks) && banks.length > 0 ? banks : DEFAULT_BANKS;
+
         const [form, setForm] = useState({ amount: '', desc: '', cat: 'Інше', source: safeBanks[0] });
 
+
+
         const submit = async () => { if(!form.amount) return; const isDiv = type === 'dividend'; let cat = form.cat; if(!isDiv && form.cat === 'Інше') { const desc = (form.desc||'').toLowerCase(); if(desc.includes('nova')) cat = 'Логістика'; if(desc.includes('meta')) cat = 'Реклама'; } else if(isDiv) cat = 'Дивіденди'; await addDoc(collection(db, "transactions"), { amount: Number(form.amount), description: form.desc || (isDiv?'Виплата дивідендів':''), cat, source: form.source, type: (type==='dividend' || type==='expense') ? 'expense' : 'income', isDividend: isDiv, date: new Date().toLocaleDateString('uk-UA'), createdAt: Date.now() }); 
+
         logAction(isDiv ? "Виплата дивідендів" : (type==='income'?'Створено дохід':'Створено витрату'), `${form.amount} ₴ - ${form.desc}`);
+
         close(); };
+
         const cats = type==='income' ? categories.income : categories.expense;
+
         const config = { income: { title: 'Дохід', bg: 'bg-emerald-500' }, expense: { title: 'Витрата', bg: 'bg-brand-500' }, dividend: { title: 'Дивіденди', bg: 'bg-indigo-500' } }[type];
+
         return (
+
             <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4"><div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={close}></div><div className="bg-white dark:bg-slate-800 w-full md:max-w-lg md:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl relative z-10 animate-fade-in"><div className={`${config.bg} p-6 text-white flex justify-between items-center`}><h3 className="font-bold text-xl">{config.title}</h3><button onClick={close} className="bg-white/20 p-2 rounded-full"><Icon name="x" size={20}/></button></div><div className="p-8 space-y-6"><div><label className="text-xs font-bold text-slate-400 uppercase ml-1 block">Сума</label><input type="number" value={form.amount} onChange={e=>setForm({...form, amount:e.target.value})} className="w-full text-5xl font-mono font-bold border-b py-2 outline-none bg-transparent dark:text-white" placeholder="0" autoFocus /></div>{type === 'dividend' ? (<div className="bg-slate-50 dark:bg-slate-700 p-4 rounded-xl text-sm"><label className="block mb-2 text-slate-600 dark:text-slate-300">Звідки?</label><select value={form.source} onChange={e=>setForm({...form, source:e.target.value})} className="w-full bg-white dark:bg-slate-600 border dark:border-slate-500 p-3 rounded-xl dark:text-white">{safeBanks.map(a=><option key={a} value={a}>{a}</option>)}</select></div>) : (<div className="space-y-4"><input type="text" value={form.desc} onChange={e=>setForm({...form, desc:e.target.value})} className="w-full border p-4 rounded-xl text-sm dark:bg-slate-700 dark:border-slate-600 dark:text-white" placeholder="Опис..." /><div className="grid grid-cols-2 gap-4"><select value={form.cat} onChange={e=>setForm({...form, cat:e.target.value})} className="w-full border p-3 rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white">{cats.map(c=><option key={c} value={c}>{c}</option>)}</select><select value={form.source} onChange={e=>setForm({...form, source:e.target.value})} className="w-full border p-3 rounded-xl dark:bg-slate-700 dark:border-slate-600 dark:text-white">{safeBanks.map(a=><option key={a} value={a}>{a}</option>)}</select></div></div>)}<button onClick={submit} className={`w-full py-4 rounded-xl font-bold text-white shadow-lg ${config.bg}`}>Підтвердити</button></div></div></div>
+
         );
+
     };
 
+
+
+    const MobileNav = ({ view, setView, canAccess, toggleTheme }) => (
+
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-2 pb-safe z-40 flex justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.05)] overflow-x-auto no-scrollbar">
+
+            {ALL_VIEWS.filter(v=>v.mobile && canAccess(v.id)).map(item => (
+
+                <button key={item.id} onClick={()=>setView(item.id)} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 min-w-[64px] transition ${view===item.id ? 'text-brand-600 bg-brand-50 dark:bg-slate-800' : 'text-slate-400'}`}>
+
+                    <Icon name={item.icon} size={24} className={view===item.id ? 'fill-current' : ''}/>
+
+                    <span className="text-[10px] font-bold">{item.label.split(' ')[0]}</span>
+
+                </button>
+
+            ))}
+
+            <button onClick={toggleTheme} className="flex flex-col items-center gap-1 p-2 rounded-xl w-16 min-w-[64px] text-slate-400"><Icon name="moon" size={24}/><span className="text-[10px] font-bold">Тема</span></button>
+
+            <button onClick={()=>setView('managers')} className={`flex flex-col items-center gap-1 p-2 rounded-xl w-16 min-w-[64px] text-slate-400 ${view==='managers'?'text-brand-600 bg-brand-50':''}`}><Icon name="menu" size={24}/><span className="text-[10px] font-bold">Ще</span></button>
+
+        </div>
+
+    );
+
+
+
+    // --- APP ---
+
+
+
+    const App = () => {
+
+        const [currentUser, setCurrentUser] = useState(null); 
+
+        const [view, setView] = useState('auth');
+
+        const [transactions, setTransactions] = useState([]);
+
+        const [loading, setLoading] = useState(true);
+
+        const [statusMsg, setStatusMsg] = useState('');
+
+        const [settings, setSettings] = useState({ monoKey: '', novaKey: '', monoAccountId: '' });
+
+        const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+
+        const [banks, setBanks] = useState(DEFAULT_BANKS);
+
+        const [email, setEmail] = useState('');
+
+        const [pass, setPass] = useState('');
+
+        const [modalType, setModalType] = useState(null);
+
+        const [themeEffect, setThemeEffect] = useState('none'); 
+
+        
+
+        useEffect(() => { if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark'); }, []);
+
+        const toggleTheme = () => document.documentElement.classList.toggle('dark');
+
+        const saveThemeEffect = async (effect) => { setThemeEffect(effect); localStorage.setItem('latiao_theme_effect', effect); await setDoc(doc(db, "settings", "global"), { themeEffect: effect }, { merge: true }); };
+
+        const saveBanks = async (newBanks) => { setBanks(newBanks); await setDoc(doc(db, "settings", "banks"), { list: newBanks }); };
+
+
+
+        // Apply Theme Variables
+
+        useEffect(() => {
+
+            const root = document.documentElement;
+
+            const theme = THEMES[themeEffect] || THEMES.none;
+
+            Object.entries(theme).forEach(([key, value]) => root.style.setProperty(key, value));
+
+        }, [themeEffect]);
+
+
+
+        useEffect(() => { const unsub = onSnapshot(doc(db, "settings", "global"), (doc) => { if(doc.exists() && doc.data().themeEffect) setThemeEffect(doc.data().themeEffect); }); return () => unsub(); }, []);
+
+        useEffect(() => { const unsub = onAuthStateChanged(auth, async (u) => { if (u) { setCurrentUser({ uid: u.uid, email: u.email, role: 'admin', permissions: ['all'] }); setView('dashboard'); loadData(); } else { try { const stored = localStorage.getItem('latiao_user'); if (stored) { setCurrentUser(JSON.parse(stored)); setView('dashboard'); loadData(); } else { setCurrentUser(null); setView('auth'); setLoading(false); } } catch (e) { localStorage.removeItem('latiao_user'); setView('auth'); setLoading(false); } } }); return () => unsub(); }, []);
+
+        
+
+        const loadData = async () => { 
+
+            setLoading(true); 
+
+            try { 
+
+                const sSnap = await getDoc(doc(db, "settings", "global")); if (sSnap.exists()) setSettings(sSnap.data()); 
+
+                const cSnap = await getDoc(doc(db, "settings", "categories")); if (cSnap.exists()) setCategories(cSnap.data()); else await setDoc(doc(db, "settings", "categories"), DEFAULT_CATEGORIES); 
+
+                const bSnap = await getDoc(doc(db, "settings", "banks")); if (bSnap.exists() && Array.isArray(bSnap.data().list)) { setBanks(bSnap.data().list); } else { setBanks(DEFAULT_BANKS); }
+
+                const q = query(collection(db, "transactions")); 
+
+                onSnapshot(q, (snap) => { const list = snap.docs.map(d => ({ id: d.id, ...d.data() })); list.sort((a,b) => (b.createdAt || 0) - (a.createdAt || 0)); setTransactions(list); setLoading(false); }); 
+
+            } catch (e) { console.error(e); setLoading(false); } 
+
+        };
+
+        
+
+        const logAction = async (action, details) => { if (!currentUser) return; try { await addDoc(collection(db, "logs"), { uid: currentUser.uid, name: currentUser.name || currentUser.email || 'Admin', role: currentUser.role || 'admin', action, details: details || '', timestamp: Date.now() }); } catch(e) {} };
+
+        useEffect(() => { if(!currentUser) return; const updatePresence = async () => { if (currentUser.role === 'manager' && currentUser.uid) { await updateDoc(doc(db, "managers", currentUser.uid), { lastSeen: Date.now() }); } }; const interval = setInterval(updatePresence, 60000); updatePresence(); return () => clearInterval(interval); }, [currentUser]);
+
+
+
+        const metrics = useMemo(() => {
+
+            const income = transactions.filter(t => t.type === 'income' && !t.isDividend); const expense = transactions.filter(t => t.type === 'expense' && !t.isDividend); const revenue = income.reduce((s,t) => s + (Number(t.amount)||0), 0); const cogs = expense.filter(t => t.cat === 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0); const opex = expense.filter(t => t.cat !== 'Закупівля (COGS)').reduce((s,t) => s + (Number(t.amount)||0), 0); const totalExpense = cogs + opex; const totalCash = transactions.reduce((s,t) => t.type==='income' ? s+(Number(t.amount)||0) : s-(Number(t.amount)||0), 0); const dividends = transactions.filter(t => t.isDividend).reduce((s,t) => s+(Number(t.amount)||0), 0); const net = revenue - totalExpense; 
+
+            const balances = {}; const safeBanksList = (banks && banks.length > 0) ? banks : DEFAULT_BANKS; safeBanksList.forEach(b => balances[b] = 0); 
+
+            transactions.forEach(t => { const src = t.source || 'Готівка'; if(balances[src] !== undefined) balances[src] += (t.type==='income' ? (Number(t.amount)||0) : -(Number(t.amount)||0)); });
+
+            const expenseCats = {}; transactions.forEach(t => { if (t.type === 'expense' && !t.isDividend) { expenseCats[t.cat] = (expenseCats[t.cat] || 0) + Number(t.amount); } }); const sortedExp = Object.entries(expenseCats).sort((a,b) => b[1] - a[1]); const topExpense = sortedExp.length > 0 ? { name: sortedExp[0][0], val: sortedExp[0][1] } : { name: '-', val: 0 }; const avgTicket = income.length > 0 ? (revenue / income.length).toFixed(0) : 0; const runway = totalExpense > 0 ? (totalCash / (totalExpense / 30)).toFixed(0) : "∞"; return { revenue, cogs, opex, net, totalCash, dividends, balances, margin: revenue ? ((net/revenue)*100).toFixed(0) : 0, totalExpense, runway, operationalCashFlow: revenue - totalExpense, financingCashFlow: -dividends, netCashChange: (revenue - totalExpense) - dividends, topExpense, avgTicket };
+
+        }, [transactions, banks]);
+
+
+
+        const handleLogin = async (e) => { e.preventDefault(); setLoading(true); try { await signInWithEmailAndPassword(auth, email, pass); logAction("Вхід", "Адміністратор"); } catch (authErr) { try { const q = query(collection(db, "managers"), where("email", "==", email), where("password", "==", pass)); const snapshot = await getDocs(q); if (!snapshot.empty) { const data = snapshot.docs[0].data(); const userObj = { uid: snapshot.docs[0].id, ...data, role: 'manager' }; localStorage.setItem('latiao_user', JSON.stringify(userObj)); setCurrentUser(userObj); setView(userObj.permissions?.[0] || 'dashboard'); loadData(); logAction("Вхід", userObj.name); } else { alert("Невірний логін або пароль"); setLoading(false); } } catch (dbErr) { alert("Помилка: " + dbErr.message); setLoading(false); } } };
+
+        const handleLogout = () => { logAction("Вихід", ""); signOut(auth); localStorage.removeItem('latiao_user'); setCurrentUser(null); setView('auth'); };
+
+        const canAccess = (viewId) => { if (!currentUser) return false; if (currentUser.role === 'admin') return true; return currentUser.permissions?.includes(viewId); };
+
+        const deleteTx = async (id) => { await deleteDoc(doc(db, "transactions", id)); logAction("Видалення операції", `ID: ${id}`); };
+
+        const saveS = async (d) => { await setDoc(doc(db, "settings", "global"), d); setSettings(d); alert('Налаштування збережено'); logAction("Оновлення налаштувань", "Global"); };
+
+        const saveC = async (d) => { await setDoc(doc(db, "settings", "categories"), d); setCategories(d); };
+
+        const syncMono = async () => { if (!settings.monoKey || !settings.monoAccountId) return alert("Спочатку налаштуйте API Monobank в налаштуваннях"); setStatusMsg("Синхронізація з банком..."); try { const now = Math.floor(Date.now()/1000); const res = await fetch(`https://corsproxy.io/?https://api.monobank.ua/personal/statement/${settings.monoAccountId}/${now - 2678400}/${now}`, { headers: { 'X-Token': settings.monoKey } }); const data = await res.json(); if (!Array.isArray(data)) throw new Error("Помилка API банку"); const batch = writeBatch(db); let count=0; const ids = new Set(transactions.map(t=>t.bankId)); data.forEach(item => { if(!ids.has(item.id)) { let cat = 'Інше'; const d = (item.description||'').toLowerCase(); if(d.includes('nova')) cat='Логістика'; else if(d.includes('atb')||d.includes('silpo')) cat='Закупівля (COGS)'; batch.set(doc(collection(db,"transactions")), { amount: Math.abs(item.amount/100), description: item.description, cat, source: 'Monobank ФОП', type: item.amount>0?'income':'expense', isDividend: false, date: new Date(item.time*1000).toLocaleDateString('uk-UA'), createdAt: item.time*1000, bankId: item.id }); count++; } }); if(count>0) await batch.commit(); logAction("Синхронізація Monobank", `Додано: ${count}`); setStatusMsg(`Успішно додано: ${count} операцій`); setTimeout(()=>setStatusMsg(''), 3000); } catch(e) { setStatusMsg("Помилка синхронізації"); alert(e.message); } };
+
+        const delAll = async () => { if(confirm("ВИДАЛИТИ ВСЮ БАЗУ ДАНИХ? Це неможливо відмінити.")) { const s = await getDocs(query(collection(db,"transactions"), limit(500))); const b = writeBatch(db); s.docs.forEach(d=>b.delete(d.ref)); await b.commit(); logAction("Повне очищення бази", "Всі операції"); alert("Базу очищено."); } };
+
+
+
+        if (view === 'auth') return (
+
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+
+                <SeasonalEffects effect={themeEffect} />
+
+                <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-brand-500/20 rounded-full blur-[120px] animate-pulse"></div>
+
+                <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px]"></div>
+
+                <div className="bg-white/5 backdrop-blur-xl p-10 rounded-[32px] w-full max-w-sm text-center border border-white/10 shadow-2xl relative z-10"><div className="mb-8 flex flex-col items-center"><div className="w-20 h-20 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/30 mb-4 transform rotate-3 relative"><Icon name="flame" size={40} className="text-white absolute -top-1 -right-1 opacity-80"/><span className="text-4xl font-extrabold text-white">L</span></div><h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300">Latiao <span className="text-brand-500">Фінанси</span></h1><p className="text-slate-400 text-sm mt-2 font-medium">Корпоративна система обліку</p></div><form onSubmit={handleLogin} className="space-y-4"><div className="relative"><Icon name="mail" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="email" placeholder="Email або Логін" value={email} onChange={e=>setEmail(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div><div className="relative"><Icon name="lock" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"/><input type="password" placeholder="Пароль" value={pass} onChange={e=>setPass(e.target.value)} className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-800/50 text-white border border-slate-700/50 outline-none focus:border-brand-500 focus:bg-slate-800 transition font-medium placeholder-slate-500"/></div><button type="submit" className="w-full bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 text-white py-4 rounded-2xl font-bold transition shadow-lg shadow-brand-500/20 active:scale-[0.98] mt-2 flex items-center justify-center gap-2">{loading ? <Icon name="loader" className="animate-spin"/> : <Icon name="log-in"/>} Увійти в систему</button></form></div>
+
+            </div>
+
+        );
+
+
+
+        if (!currentUser && view !== 'auth') return null; 
+
+
+
+        return (
+
+            <div className="flex h-screen overflow-hidden transition-colors duration-500">
+
+                <SeasonalEffects effect={themeEffect} />
+
+                <ThemeDecorations effect={themeEffect} />
+
+                <aside className="hidden md:flex w-72 bg-white dark:bg-slate-900 border-r border-slate-200/70 dark:border-slate-800 flex-col z-20 shadow-soft relative" style={{backgroundColor: 'var(--bg-50)'}}>
+
+                    <div className="p-8 pb-4 relative"><div className="flex items-center gap-3"><div className="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center shadow-lg shadow-brand-500/20 transform -rotate-3 relative overflow-hidden"><div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div><Icon name="flame" size={24} className="text-white relative z-10"/></div><div className="leading-none"><h1 className="text-xl font-extrabold tracking-tight flex flex-col" style={{color: 'var(--text-main)'}}><span>Latiao</span><span className="text-brand-600 text-sm font-bold" style={{color: 'var(--brand-600)'}}>Фінанси</span></h1></div></div></div>
+
+                    <nav className="flex-1 px-4 space-y-1.5 mt-6 overflow-y-auto py-4"><div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider">Основне</div>{ALL_VIEWS.filter(v => canAccess(v.id) && v.id !== 'settings' && v.id !== 'managers').map(item => (<button key={item.id} onClick={()=>setView(item.id)} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view===item.id ? 'active' : 'text-slate-500 hover:text-brand-600'}`} style={view!==item.id ? {color: 'var(--text-sec)'} : {}}><Icon name={item.icon} size={20} className={`transition-transform group-hover:scale-110 ${view===item.id ? '' : 'opacity-70 group-hover:opacity-100'}`}/> <span className="capitalize">{item.label}</span></button>))}</nav>
+
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-800 space-y-1.5 pb-8">
+
+                        <div className="text-xs font-bold text-slate-400 uppercase px-4 mb-2 tracking-wider mt-4">Адміністрування</div>{canAccess('managers') && <button onClick={()=>setView('managers')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='managers'?'active':'text-slate-500 hover:text-brand-600'}`} style={view!=='managers' ? {color: 'var(--text-sec)'} : {}}><Icon name="users-round" size={20} className={`transition-transform group-hover:scale-110 ${view==='managers'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Команда</span></button>}{canAccess('settings') && <button onClick={()=>setView('settings')} className={`w-full flex items-center gap-3 p-3.5 text-sm font-bold transition-all sidebar-link group ${view==='settings'?'active':'text-slate-500 hover:text-brand-600'}`} style={view!=='settings' ? {color: 'var(--text-sec)'} : {}}><Icon name="sliders-horizontal" size={20} className={`transition-transform group-hover:scale-110 ${view==='settings'?'':'opacity-70 group-hover:opacity-100'}`}/> <span>Налаштування</span></button>}<button onClick={handleLogout} className="w-full flex items-center gap-3 p-3.5 text-sm font-bold text-slate-400 hover:bg-red-50 hover:text-red-600 transition-all sidebar-link mt-4 group"><Icon name="log-out" size={20} className="opacity-70 group-hover:opacity-100 transition-transform group-hover:translate-x-1"/> Вихід з системи</button></div>
+
+                </aside>
+
+                
+
+                <main className="flex-1 overflow-y-auto p-4 md:p-8 relative scroll-smooth no-scrollbar">
+
+                    <div className="flex justify-between items-center mb-8 fade-in sticky top-0 z-30 py-4 -mt-4 bg-transparent backdrop-blur-md"><div><h1 className="text-3xl md:text-4xl font-extrabold tracking-tight capitalize drop-shadow-sm" style={{color: 'var(--text-main)'}}>{ALL_VIEWS.find(v=>v.id===view)?.label}</h1><p className="text-slate-500 font-medium mt-1 flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> {currentUser?.email}</p></div>{(view==='dashboard'||view==='ops') && <div className="hidden md:flex gap-4 shadow-soft p-1.5 rounded-2xl border" style={{backgroundColor: 'var(--bg-100)', borderColor: 'var(--bg-200)'}}><button onClick={()=>setModalType('income')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="arrow-down-left" size={20}/> Дохід</button><button onClick={()=>setModalType('expense')} className="bg-brand-500 hover:bg-brand-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-brand-200/50 flex gap-2 items-center transition active:scale-95"><Icon name="arrow-up-right" size={20}/> Витрата</button></div>}</div>
+
+                    {statusMsg && <div className="fixed top-6 right-6 bg-slate-900/90 backdrop-blur-md text-white px-6 py-4 rounded-2xl shadow-2xl z-50 flex items-center gap-3 animate-bounce border border-slate-700/50 font-medium"><Icon name="loader" className="animate-spin text-brand-500"/> {statusMsg}</div>}
+
+                    <div className="fade-in pb-24 relative z-10">
+
+                        {loading && <div className="absolute inset-0 flex items-center justify-center bg-slate-50/50 backdrop-blur-sm z-20 rounded-3xl"><div className="flex flex-col items-center gap-3 text-brand-500 font-bold animate-pulse"><Icon name="loader" size={40} className="animate-spin"/>Завантаження даних...</div></div>}
+
+                        <div className={loading ? 'opacity-50 pointer-events-none filter blur-sm transition-all duration-500' : 'transition-all duration-500'}>
+
+                            {view==='dashboard' && <DashboardView metrics={metrics} transactions={transactions} setView={setView} banks={banks}/>}
+
+                            {view==='procurement' && <ProcurementView db={db} banks={banks} logAction={logAction}/>}
+
+                            {view==='pnl' && <PnLView metrics={metrics} transactions={transactions}/>}
+
+                            {view==='cashflow' && <CashFlowView metrics={metrics}/>}
+
+                            {view==='dividends' && <DividendsView metrics={metrics} transactions={transactions} setModalType={setModalType}/>}
+
+                            {view==='ops' && <OpsView transactions={transactions} deleteTx={deleteTx} syncMono={syncMono} canDelete={currentUser?.role==='admin'} categories={categories}/>}
+
+                            {view==='settings' && <SettingsView settings={settings} setSettings={setSettings} saveSettings={saveS} syncMono={syncMono} deleteAllTransactions={delAll} categories={categories} saveCategories={saveC} themeEffect={themeEffect} setThemeEffect={saveThemeEffect} setView={setView} logAction={logAction} banks={banks} setBanks={setBanks} saveBanks={saveBanks}/>}
+
+                            {view==='managers' && <ManagersView db={db} logAction={logAction}/>}
+
+                        </div>
+
+                    </div>
+
+                </main>
+
+                <MobileNav view={view} setView={setView} canAccess={canAccess} toggleTheme={toggleTheme} />
+
+                {/* Floating Action Button for Mobile */}
+
+                {(view==='dashboard'||view==='ops') && <div className="md:hidden fixed bottom-24 right-4 flex flex-col gap-3 z-30"><button onClick={()=>setModalType('income')} className="w-14 h-14 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 flex items-center justify-center active:scale-90 transition"><Icon name="plus" size={28}/></button><button onClick={()=>setModalType('expense')} className="w-14 h-14 rounded-full bg-brand-500 text-white shadow-lg shadow-brand-500/40 flex items-center justify-center active:scale-90 transition"><Icon name="minus" size={28}/></button></div>}
+
+                {modalType && <TransactionModal type={modalType} close={()=>setModalType(null)} categories={categories} logAction={logAction} banks={banks}/>}
+
+            </div>
+
+        );
+
+    };
+
+
+
     const root = ReactDOM.createRoot(document.getElementById('root'));
+
     root.render(<ErrorBoundary><App /></ErrorBoundary>);
+
 </script>
 
+
+
 </body>
+
 </html>
