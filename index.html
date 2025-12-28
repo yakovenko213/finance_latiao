@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Latiao Finance | Procurement List v16.6</title>
+    <title>Latiao Finance | Full v16.7</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -30,6 +30,7 @@
                         mono: ['JetBrains Mono', 'monospace'] 
                     },
                     colors: { 
+                        // Dynamic Theme Colors mapped to CSS Variables
                         brand: { 
                             50: 'var(--brand-50)', 
                             100: 'var(--brand-100)', 
@@ -38,13 +39,13 @@
                             700: 'var(--brand-700)' 
                         },
                         slate: { 
-                            50: 'var(--bg-50)',   
-                            100: 'var(--bg-100)', 
-                            200: 'var(--bg-200)', 
-                            700: 'var(--text-sec)', 
-                            800: 'var(--card-bg)', 
+                            50: 'var(--bg-50)',   // Main Background
+                            100: 'var(--bg-100)', // Secondary Background
+                            200: 'var(--bg-200)', // Borders
+                            700: 'var(--text-sec)', // Secondary Text
+                            800: 'var(--card-bg)', // Card Dark/Light
                             850: '#172033', 
-                            900: 'var(--text-main)' 
+                            900: 'var(--text-main)' // Main Text
                         }
                     },
                     boxShadow: {
@@ -74,12 +75,13 @@
 
         body { 
             -webkit-tap-highlight-color: transparent; 
-            transition: background-color 0.5s, color 0.5s; 
+            transition: background-color 0.5s ease, color 0.5s ease; 
             overflow-x: hidden; 
             background-color: var(--bg-50); 
             color: var(--text-main); 
         }
         
+        /* Background Pattern */
         main { 
             background-image: radial-gradient(var(--bg-200) 1px, transparent 1px); 
             background-size: 24px 24px; 
@@ -117,7 +119,6 @@
         /* DECORATIONS */
         .deco-hanging { position: fixed; top: 0; z-index: 50; animation: swing 3s infinite ease-in-out alternate; transform-origin: top center; pointer-events: none; }
         @keyframes swing { from { transform: rotate(-5deg); } to { transform: rotate(5deg); } }
-        
         .deco-ground { position: fixed; bottom: 0; z-index: 50; pointer-events: none; opacity: 0.8; }
 
         #sos-btn { position: fixed; bottom: 20px; left: 20px; z-index: 99999; background: #ef4444; color: white; padding: 12px 20px; border-radius: 12px; font-size: 12px; font-weight: 800; border: 2px solid white; box-shadow: 0 10px 25px rgba(0,0,0,0.5); cursor: pointer; opacity: 0.9; transition: all 0.2s; }
@@ -180,6 +181,7 @@
 
     const { useState, useEffect, useMemo, Component } = React;
 
+    // --- ERROR BOUNDARY ---
     class ErrorBoundary extends Component {
         constructor(props) { super(props); this.state = { hasError: false }; }
         static getDerivedStateFromError(error) { return { hasError: true }; }
@@ -235,6 +237,7 @@
         return <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">{particles.map(p=><div key={p.id} className={`particle ${className}`} style={{left:`${p.left}%`,animationDuration:`${p.anim}s`,animationDelay:`${p.delay}s`,fontSize:`${p.size}px`}}>{symbol}</div>)}</div>;
     };
 
+    // --- THEME DECORATIONS ---
     const ThemeDecorations = ({ effect }) => {
         if (effect === 'winter') return (
             <>
@@ -604,6 +607,7 @@
         const [newCatIn, setNewCatIn] = useState(''); const [newCatOut, setNewCatOut] = useState(''); const [newBank, setNewBank] = useState('');
         const addCat = (t, v, setter) => { if(!v) return; const newCats = {...categories, [t]: [...(categories?.[t]||[]), v]}; saveCategories(newCats); logAction("Додавання категорії", v); setter(''); };
         const removeCat = (t, v) => { if(confirm('Видалити?')) { const newCats = {...categories, [t]: categories[t].filter(c=>c!==v)}; saveCategories(newCats); logAction("Видалення категорії", v); } };
+        
         const addBank = () => { if(!newBank) return; const newB = [...banks, newBank]; saveBanks(newB); setNewBank(''); logAction("Додавання банку", newBank); };
         const removeBank = (b) => { if(confirm('Видалити банк?')) { const newB = banks.filter(x=>x!==b); saveBanks(newB); logAction("Видалення банку", b); } };
 
